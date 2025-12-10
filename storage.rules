@@ -1,0 +1,58 @@
+/**
+ * Firebase Storage Security Rules
+ * 
+ * For future use when/if we add file uploads
+ * (e.g., energy bill photos, EPC documents)
+ */
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isValidFileSize() {
+      // Max 5MB per file
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+    
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidPDFType() {
+      return request.resource.contentType == 'application/pdf';
+    }
+    
+    // User uploads (bills, documents)
+    match /users/{userId}/{allPaths=**} {
+      // Users can only access their own files
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      allow write: if isAuthenticated() 
+        && isOwner(userId) 
+        && isValidFileSize()
+        && (isValidImageType() || isValidPDFType());
+      
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Public assets (logos, etc.)
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if false; // Admin only (via Firebase Console)
+    }
+    
+    // Default: deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

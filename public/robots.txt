@@ -1,0 +1,26 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://cost-saver-app.vercel.app/sitemap.xml
+
+# Disallow admin pages
+Disallow: /admin/
+Disallow: /api/
+
+# Disallow testing pages
+Disallow: /testing-report
+Disallow: /ux-testing
+
+# Allow important pages
+Allow: /
+Allow: /about
+Allow: /blog
+Allow: /products
+Allow: /faq
+Allow: /contact
+Allow: /tools/
+
+# Crawl delay (optional, be nice to servers)
+Crawl-delay: 1

@@ -1,0 +1,861 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Home, 
+  Users, 
+  Flame, 
+  Zap, 
+  Tag, 
+  CreditCard,
+  TrendingUp,
+  Edit2,
+  CheckCircle,
+  Shield,
+  ArrowLeft,
+  Settings,
+  LogOut,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import ConversationalProfileEditor from '@/components/account/ConversationalProfileEditor';
+import { UserAccount, UserProfile } from '@/lib/types/accountTypes';
+import { getFieldConfig, EDITABLE_FIELDS } from '@/lib/editableFields';
+
+// Mock data - replace with actual API calls
+const MOCK_USER_ACCOUNT: UserAccount = {
+  id: 'user-123',
+  email: 'sarah@example.com',
+  name: 'Sarah Johnson',
+  phone: '+44 7700 900123',
+  createdAt: new Date('2024-01-15'),
+  updatedAt: new Date('2024-03-20'),
+  emailVerified: true,
+  twoFactorEnabled: false,
+};
+
+const MOCK_USER_PROFILE: UserProfile = {
+  postcode: 'SW1A 1AA',
+  homeType: 'semi-detached',
+  occupants: 3,
+  heatingType: 'gas',
+  supplier: 'octopus',
+  tariffName: 'Flexible Octopus',
+  tariffType: 'variable',
+  dayRate: 28.5,
+  standingCharge: 45,
+  paymentMethod: 'direct-debit',
+  smartMeterType: 'SMETS2',
+  estimatedAnnualUsage: 3200,
+  hasElectricVehicle: false,
+  hasSolarPanels: false,
+  profileCompleteness: 85,
+  lastUpdated: new Date('2024-03-20'),
+  dataSource: {
+    postcode: 'onboarding',
+    homeType: 'onboarding',
+    occupants: 'onboarding',
+    heatingType: 'bill',
+    supplier: 'bill',
+    tariffName: 'bill',
+    dayRate: 'bill',
+    standingCharge: 'bill',
+    paymentMethod: 'manual',
+    smartMeterType: 'photo',
+    estimatedAnnualUsage: 'photo',
+  },
+};
+
+export default function AccountPage() {
+  const router = useRouter();
+  const [userAccount] = useState<UserAccount>(MOCK_USER_ACCOUNT);
+  const [userProfile, setUserProfile] = useState<UserProfile>(MOCK_USER_PROFILE);
+  const [editingField, setEditingField] = useState<string | null>(null);
+
+  const handleEditField = (fieldKey: string) => {
+    setEditingField(fieldKey);
+  };
+
+  const handleSaveField = (fieldKey: string, newValue: any) => {
+    // Update profile
+    setUserProfile((prev) => ({
+      ...prev,
+      [fieldKey]: newValue,
+      lastUpdated: new Date(),
+      dataSource: {
+        ...prev.dataSource,
+        [fieldKey]: 'manual',
+      },
+    }));
+
+    // Close editor after brief delay
+    setTimeout(() => {
+      setEditingField(null);
+    }, 1500);
+
+    // TODO: Save to backend
+    console.log('Saving field:', fieldKey, newValue);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingField(null);
+  };
+
+  // If editing a field, show conversational editor
+  if (editingField) {
+    const fieldConfig = getFieldConfig(editingField);
+    if (fieldConfig) {
+      return (
+        <ConversationalProfileEditor
+          field={fieldConfig}
+          currentValue={userProfile[editingField as keyof UserProfile]}
+          userProfile={userProfile}
+          onSave={handleSaveField}
+          onCancel={handleCancelEdit}
+        />
+      );
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            Dashboard
+          </button>
+          <h1 className="text-xl font-semibold text-gray-900">Account</h1>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/settings')}
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        {/* Profile Completeness */}
+        <Card className="p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-bold">Hi, {userAccount.name.split(' ')[0]}! 👋</h2>
+              <p className="text-blue-100 mt-1">
+                Your profile is {userProfile.profileCompleteness}% complete
+              </p>
+            </div>
+            {userAccount.emailVerified && (
+              <CheckCircle className="w-8 h-8 text-green-300" />
+            )}
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="w-full bg-white/20 rounded-full h-3">
+            <div
+              className="bg-white rounded-full h-3 transition-all duration-500"
+              style={{ width: `${userProfile.profileCompleteness}%` }}
+            />
+          </div>
+
+          {userProfile.profileCompleteness < 100 && (
+            <p className="text-sm text-blue-100 mt-3">
+              💡 Complete your profile to get more accurate savings estimates
+            </p>
+          )}
+        </Card>
+
+        {/* Personal Information */}
+        <section>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <User className="w-5 h-5 mr-2" />
+            Personal Information
+          </h3>
+          <div className="space-y-3">
+            <InfoCard
+              icon={<User className="w-5 h-5 text-blue-600" />}
+              label="Name"
+              value={userAccount.name}
+              onEdit={() => handleEditField('name')}
+              dataSource="Account"
+            />
+            <InfoCard
+              icon={<Mail className="w-5 h-5 text-blue-600" />}
+              label="Email"
+              value={userAccount.email}
+              verified={userAccount.emailVerified}
+              onEdit={() => handleEditField('email')}
+              dataSource="Account"
+            />
+            <InfoCard
+              icon={<Phone className="w-5 h-5 text-blue-600" />}
+              label="Phone"
+              value={userAccount.phone || 'Not set'}
+              onEdit={() => handleEditField('phone')}
+              dataSource="Account"
+            />
+            <InfoCard
+              icon={<MapPin className="w-5 h-5 text-blue-600" />}
+              label="Postcode"
+              value={userProfile.postcode}
+              onEdit={() => handleEditField('postcode')}
+              dataSource={userProfile.dataSource?.postcode}
+            />
+          </div>
+        </section>
+
+        {/* Household Information */}
+        <section>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Home className="w-5 h-5 mr-2" />
+            Household Details
+          </h3>
+          <div className="space-y-3">
+            <InfoCard
+              icon={<Home className="w-5 h-5 text-green-600" />}
+              label="Home Type"
+              value={formatHomeType(userProfile.homeType)}
+              onEdit={() => handleEditField('homeType')}
+              dataSource={userProfile.dataSource?.homeType}
+            />
+            <InfoCard
+              icon={<Users className="w-5 h-5 text-green-600" />}
+              label="Occupants"
+              value={`${userProfile.occupants} ${userProfile.occupants === 1 ? 'person' : 'people'}`}
+              onEdit={() => handleEditField('occupants')}
+              dataSource={userProfile.dataSource?.occupants}
+            />
+            <InfoCard
+              icon={<Flame className="w-5 h-5 text-green-600" />}
+              label="Heating Type"
+              value={formatHeatingType(userProfile.heatingType)}
+              onEdit={() => handleEditField('heatingType')}
+              dataSource={userProfile.dataSource?.heatingType}
+            />
+            {userProfile.hasElectricVehicle && (
+              <InfoCard
+                icon={<Zap className="w-5 h-5 text-green-600" />}
+                label="Electric Vehicle"
+                value="Yes"
+                badge="EV"
+                dataSource="Manual"
+              />
+            )}
+            {userProfile.hasSolarPanels && (
+              <InfoCard
+                icon={<Zap className="w-5 h-5 text-green-600" />}
+                label="Solar Panels"
+                value="Yes"
+                badge="Solar"
+                dataSource="Manual"
+              />
+            )}
+          </div>
+        </section>
+
+        {/* Energy Details */}
+        <section>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Zap className="w-5 h-5 mr-2" />
+            Energy Details
+          </h3>
+          <div className="space-y-3">
+            {userProfile.supplier && (
+              <InfoCard
+                icon={<Tag className="w-5 h-5 text-purple-600" />}
+                label="Supplier"
+                value={formatSupplier(userProfile.supplier)}
+                onEdit={() => handleEditField('supplier')}
+                dataSource={userProfile.dataSource?.supplier}
+              />
+            )}
+            {userProfile.tariffName && (
+              <InfoCard
+                icon={<Tag className="w-5 h-5 text-purple-600" />}
+                label="Tariff"
+                value={userProfile.tariffName}
+                onEdit={() => handleEditField('tariffName')}
+                dataSource={userProfile.dataSource?.tariffName}
+              />
+            )}
+            {userProfile.dayRate && (
+              <InfoCard
+                icon={<TrendingUp className="w-5 h-5 text-purple-600" />}
+                label="Unit Rate"
+                value={`${userProfile.dayRate}p/kWh`}
+                onEdit={() => handleEditField('dayRate')}
+                dataSource={userProfile.dataSource?.dayRate}
+              />
+            )}
+            {userProfile.standingCharge && (
+              <InfoCard
+                icon={<CreditCard className="w-5 h-5 text-purple-600" />}
+                label="Standing Charge"
+                value={`${userProfile.standingCharge}p/day`}
+                onEdit={() => handleEditField('standingCharge')}
+                dataSource={userProfile.dataSource?.standingCharge}
+              />
+            )}
+            {userProfile.paymentMethod && (
+              <InfoCard
+                icon={<CreditCard className="w-5 h-5 text-purple-600" />}
+                label="Payment Method"
+                value={formatPaymentMethod(userProfile.paymentMethod)}
+                onEdit={() => handleEditField('paymentMethod')}
+                dataSource={userProfile.dataSource?.paymentMethod}
+              />
+            )}
+            {userProfile.smartMeterType && (
+              <InfoCard
+                icon={<Zap className="w-5 h-5 text-purple-600" />}
+                label="Smart Meter"
+                value={userProfile.smartMeterType}
+                onEdit={() => handleEditField('smartMeterType')}
+                dataSource={userProfile.dataSource?.smartMeterType}
+              />
+            )}
+            {userProfile.estimatedAnnualUsage && (
+              <InfoCard
+                icon={<TrendingUp className="w-5 h-5 text-purple-600" />}
+                label="Annual Usage"
+                value={`${userProfile.estimatedAnnualUsage.toLocaleString()} kWh`}
+                onEdit={() => handleEditField('estimatedAnnualUsage')}
+                dataSource={userProfile.dataSource?.estimatedAnnualUsage}
+              />
+            )}
+          </div>
+        </section>
+
+        {/* Quick Actions */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+          <Button
+            variant="outline"
+            className="py-6 text-left justify-start"
+            onClick={() => router.push('/settings')}
+          >
+            <Settings className="w-5 h-5 mr-3" />
+            <div>
+              <div className="font-medium">Settings</div>
+              <div className="text-xs text-gray-500">Notifications, privacy, preferences</div>
+            </div>
+          </Button>
+          <Button
+            variant="outline"
+            className="py-6 text-left justify-start"
+            onClick={() => router.push('/settings/privacy')}
+          >
+            <Shield className="w-5 h-5 mr-3" />
+            <div>
+              <div className="font-medium">Privacy & Data</div>
+              <div className="text-xs text-gray-500">Manage your data, GDPR rights</div>
+            </div>
+          </Button>
+        </section>
+
+        {/* Account Created */}
+        <div className="text-center text-sm text-gray-500 pt-4">
+          Account created {formatDate(userAccount.createdAt)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * InfoCard Component
+ */
+interface InfoCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onEdit?: () => void;
+  verified?: boolean;
+  badge?: string;
+  dataSource?: string;
+}
+
+function InfoCard({ icon, label, value, onEdit, verified, badge, dataSource }: InfoCardProps) {
+  return (
+    <Card className="p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center flex-1">
+          <div className="mr-3">{icon}</div>
+          <div className="flex-1">
+            <div className="text-sm text-gray-500">{label}</div>
+            <div className="font-medium text-gray-900 flex items-center gap-2">
+              {value}
+              {verified && (
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              )}
+              {badge && (
+                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                  {badge}
+                </span>
+              )}
+            </div>
+            {dataSource && (
+              <div className="text-xs text-gray-400 mt-1">
+                Source: {formatDataSource(dataSource)}
+              </div>
+            )}
+          </div>
+        </div>
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onEdit}
+            className="text-blue-600 hover:text-blue-700"
+          >
+            <Edit2 className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * Formatting helpers
+ */
+function formatHomeType(type: string): string {
+  const map: Record<string, string> = {
+    flat: 'Flat',
+    terraced: 'Terraced House',
+    'semi-detached': 'Semi-Detached House',
+    detached: 'Detached House',
+  };
+  return map[type] || type;
+}
+
+function formatHeatingType(type: string): string {
+  const map: Record<string, string> = {
+    gas: 'Gas Central Heating',
+    electricity: 'Electric Heating',
+    'heat-pump': 'Heat Pump',
+    mixed: 'Mixed (Gas + Electric)',
+  };
+  return map[type] || type;
+}
+
+function formatSupplier(supplier: string): string {
+  const map: Record<string, string> = {
+    octopus: 'Octopus Energy',
+    'british-gas': 'British Gas',
+    edf: 'EDF Energy',
+    eon: 'E.ON',
+    'scottish-power': 'Scottish Power',
+    ovo: 'OVO Energy',
+    bulb: 'Bulb',
+    shell: 'Shell Energy',
+    other: 'Other',
+  };
+  return map[supplier] || supplier;
+}
+
+function formatPaymentMethod(method: string): string {
+  const map: Record<string, string> = {
+    'direct-debit': 'Direct Debit',
+    prepayment: 'Prepayment Meter',
+    'standard-credit': 'Standard Credit',
+  };
+  return map[method] || method;
+}
+
+function formatDataSource(source: string): string {
+  const map: Record<string, string> = {
+    manual: 'Manually entered',
+    bill: 'Extracted from bill',
+    photo: 'Extracted from photo',
+    onboarding: 'Onboarding',
+  };
+  return map[source] || source;
+}
+
+function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
+      setProfileError(error instanceof Error ? error.message : 'Failed to update profile');
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setPasswordStatus('saving');
+    setPasswordError('');
+
+    // Validation
+    if (newPassword.length < 6) {
+      setPasswordStatus('error');
+      setPasswordError('New password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordStatus('error');
+      setPasswordError('Passwords do not match');
+      return;
+    }
+
+    try {
+      await updatePassword(user, newPassword);
+      setPasswordStatus('success');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setTimeout(() => setPasswordStatus('idle'), 3000);
+    } catch (error: unknown) {
+      setPasswordStatus('error');
+      setPasswordError(error instanceof Error ? error.message : 'Failed to change password');
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (deleteConfirmText === 'DELETE') {
+      // TODO: Implement account deletion with Firebase
+      alert('Account deletion would happen here. This requires re-authentication for security.');
+      setShowDeleteConfirm(false);
+      setDeleteConfirmText('');
+    }
+  };
+
+  const tabs = [
+    { id: 'profile' as const, label: 'Profile', icon: '👤' },
+    { id: 'security' as const, label: 'Security', icon: '🔒' },
+    { id: 'privacy' as const, label: 'Privacy', icon: '🛡️' },
+    { id: 'danger' as const, label: 'Danger Zone', icon: '⚠️' },
+  ];
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+      <Navigation />
+      
+      <main className="flex-1 pt-20 pb-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Account Settings
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              Manage your profile, security, and privacy settings
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-6">
+            
+            {/* Sidebar Tabs */}
+            <div className="md:col-span-1">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-2 space-y-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-colors flex items-center space-x-3 ${
+                      activeTab === tab.id
+                        ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-semibold'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="md:col-span-3">
+              
+              {/* Profile Tab */}
+              {activeTab === 'profile' && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                      Profile Information
+                    </h2>
+                    
+                    <form onSubmit={handleUpdateProfile} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Full Name
+                        </label>
+                        <input
+                          type="text"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          placeholder="Your name"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          value={user?.email || ''}
+                          disabled
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Email cannot be changed for security reasons
+                        </p>
+                      </div>
+
+                      {profileError && (
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
+                          {profileError}
+                        </div>
+                      )}
+
+                      {profileStatus === 'success' && (
+                        <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-600 dark:text-green-400 text-sm">
+                          Profile updated successfully!
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={profileStatus === 'saving'}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                      >
+                        {profileStatus === 'saving' ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Security Tab */}
+              {activeTab === 'security' && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                      Change Password
+                    </h2>
+                    
+                    <form onSubmit={handleChangePassword} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Current Password
+                        </label>
+                        <input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          New Password
+                        </label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Must be at least 6 characters
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Confirm New Password
+                        </label>
+                        <input
+                          type="password"
+                          value={confirmNewPassword}
+                          onChange={(e) => setConfirmNewPassword(e.target.value)}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+
+                      {passwordError && (
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
+                          {passwordError}
+                        </div>
+                      )}
+
+                      {passwordStatus === 'success' && (
+                        <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-600 dark:text-green-400 text-sm">
+                          Password changed successfully!
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={passwordStatus === 'saving'}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                      >
+                        {passwordStatus === 'saving' ? 'Updating...' : 'Update Password'}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Privacy Tab */}
+              {activeTab === 'privacy' && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                      Privacy & Data
+                    </h2>
+                    
+                    <div className="space-y-4">
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                          Download Your Data
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                          Get a copy of all your personal data in JSON format
+                        </p>
+                        <button className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-900 dark:text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                          Download Data
+                        </button>
+                      </div>
+
+                      <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                          Email Preferences
+                        </h3>
+                        <div className="space-y-2">
+                          <label className="flex items-center space-x-3 text-sm">
+                            <input type="checkbox" defaultChecked className="rounded" />
+                            <span className="text-gray-700 dark:text-gray-300">Weekly savings summaries</span>
+                          </label>
+                          <label className="flex items-center space-x-3 text-sm">
+                            <input type="checkbox" defaultChecked className="rounded" />
+                            <span className="text-gray-700 dark:text-gray-300">Energy price alerts</span>
+                          </label>
+                          <label className="flex items-center space-x-3 text-sm">
+                            <input type="checkbox" className="rounded" />
+                            <span className="text-gray-700 dark:text-gray-300">Product updates and tips</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                          Your Privacy Matters
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                          We never sell your data. Read our full privacy policy to learn how we protect your information.
+                        </p>
+                        <a
+                          href="/privacy"
+                          className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-semibold"
+                        >
+                          Read Privacy Policy →
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Danger Zone Tab */}
+              {activeTab === 'danger' && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 space-y-6 border-2 border-red-200 dark:border-red-800">
+                  <div>
+                    <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">
+                      ⚠️ Danger Zone
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+                      Actions in this section are permanent and cannot be undone.
+                    </p>
+                    
+                    {!showDeleteConfirm ? (
+                      <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                          Delete Account
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                          Permanently delete your account and all associated data. This action cannot be reversed.
+                        </p>
+                        <button
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                        >
+                          Delete My Account
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                        <h3 className="font-semibold text-red-600 dark:text-red-400 mb-3">
+                          Are you absolutely sure?
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                          This will permanently delete your account, all your home data, saved bills, and preferences. 
+                          Type <strong>DELETE</strong> below to confirm.
+                        </p>
+                        <input
+                          type="text"
+                          value={deleteConfirmText}
+                          onChange={(e) => setDeleteConfirmText(e.target.value)}
+                          placeholder="Type DELETE"
+                          className="w-full px-4 py-2 border border-red-300 dark:border-red-700 rounded-lg mb-4 dark:bg-gray-700 dark:text-white"
+                        />
+                        <div className="flex space-x-3">
+                          <button
+                            onClick={handleDeleteAccount}
+                            disabled={deleteConfirmText !== 'DELETE'}
+                            className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                          >
+                            Yes, Delete Forever
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowDeleteConfirm(false);
+                              setDeleteConfirmText('');
+                            }}
+                            className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-900 dark:text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

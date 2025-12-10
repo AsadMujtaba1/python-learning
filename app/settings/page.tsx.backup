@@ -1,0 +1,203 @@
+/**
+ * Enhanced Settings Page
+ * Complete profile management with progressive disclosure
+ */
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import type { UserHomeData } from '@/types';
+import type { ExpertProfile, ProfileSection } from '@/lib/types/userProfile';
+import { PROFILE_SECTIONS } from '@/lib/types/userProfile';
+import { calculateCompleteness, calculatePotentialSavings } from '@/lib/utils/profileAnalysis';
+import Button from '@/components/Button';
+import Input from '@/components/Input';
+import Select from '@/components/Select';
+import Radio from '@/components/Radio';
+import Checkbox from '@/components/Checkbox';
+import Badge from '@/components/Badge';
+import Alert from '@/components/Alert';
+import BillUpload from '@/components/BillUpload';
+import LoadingSpinner from '@/components/LoadingSpinner';
+
+export default function SettingsPage() {
+  const router = useRouter();
+  const [homeData, setHomeData] = useState<UserHomeData>({
+    postcode: '',
+    homeType: 'terraced',
+    occupants: 2,
+    heatingType: 'gas',
+  });
+  const [saved, setSaved] = useState(false);
+
+  // Load existing data
+  useEffect(() => {
+    const stored = localStorage.getItem('homeData');
+    if (stored) {
+      setHomeData(JSON.parse(stored));
+    }
+  }, []);
+
+  const handleSave = () => {
+    localStorage.setItem('homeData', JSON.stringify(homeData));
+    setSaved(true);
+    setTimeout(() => {
+      router.push('/dashboard');
+    }, 1500);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-6">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 mb-4 flex items-center gap-2"
+          >
+            ← Back to Dashboard
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Settings
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Update your home details to get accurate cost estimates
+          </p>
+        </div>
+
+        {/* Settings Form */}
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-gray-700 p-8 shadow-lg">
+          {/* Postcode */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Postcode
+            </label>
+            <input
+              type="text"
+              value={homeData.postcode}
+              onChange={(e) => setHomeData({ ...homeData, postcode: e.target.value.toUpperCase() })}
+              className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
+              placeholder="e.g., SW1A 1AA"
+            />
+          </div>
+
+          {/* Home Type */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Home Type
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { value: 'flat', label: 'Flat', emoji: '🏢' },
+                { value: 'terraced', label: 'Terraced', emoji: '🏘️' },
+                { value: 'semi-detached', label: 'Semi-Detached', emoji: '🏠' },
+                { value: 'detached', label: 'Detached', emoji: '🏡' },
+              ] as const).map((type) => (
+                <button
+                  key={type.value}
+                  onClick={() => setHomeData({ ...homeData, homeType: type.value })}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    homeData.homeType === type.value
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                  }`}
+                >
+                  <div className="text-3xl mb-2">{type.emoji}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    {type.label}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Number of Occupants */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Number of Occupants: {homeData.occupants}
+            </label>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setHomeData({ ...homeData, occupants: Math.max(1, homeData.occupants - 1) })}
+                className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center text-xl font-bold"
+              >
+                −
+              </button>
+              <div className="flex-1 text-center">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={homeData.occupants}
+                  onChange={(e) => setHomeData({ ...homeData, occupants: parseInt(e.target.value) })}
+                  className="w-full"
+                />
+              </div>
+              <button
+                onClick={() => setHomeData({ ...homeData, occupants: Math.min(10, homeData.occupants + 1) })}
+                className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center text-xl font-bold"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Heating Type */}
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Heating Type
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { value: 'gas', label: 'Gas', emoji: '🔥' },
+                { value: 'electricity', label: 'Electricity', emoji: '⚡' },
+                { value: 'heat-pump', label: 'Heat Pump', emoji: '♨️' },
+                { value: 'mixed', label: 'Mixed', emoji: '🔄' },
+              ] as const).map((type) => (
+                <button
+                  key={type.value}
+                  onClick={() => setHomeData({ ...homeData, heatingType: type.value })}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    homeData.heatingType === type.value
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                  }`}
+                >
+                  <div className="text-3xl mb-2">{type.emoji}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    {type.label}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <button
+            onClick={handleSave}
+            disabled={saved}
+            className={`w-full py-4 rounded-xl font-semibold text-white transition-all ${
+              saved
+                ? 'bg-green-500'
+                : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+            }`}
+          >
+            {saved ? '✓ Saved! Redirecting...' : 'Save Changes'}
+          </button>
+        </div>
+
+        {/* Additional Settings (Future) */}
+        <div className="mt-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-gray-700 p-8 shadow-lg">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            Advanced Settings
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
+            Coming soon: Custom energy rates, insulation level, smart meter integration, and more.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

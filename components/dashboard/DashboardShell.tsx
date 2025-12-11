@@ -10,6 +10,7 @@
 'use client';
 
 import { ReactNode, useState, useEffect } from 'react';
+import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -54,6 +55,11 @@ import CostComparisonHero from '@/components/dashboard/CostComparisonHero';
 import SmartRecommendationsCard from '@/components/dashboard/SmartRecommendationsCard';
 import UKRegionalCostMap from '@/components/charts/UKRegionalCostMap';
 import MissingDataNotice from '@/components/dashboard/MissingDataNotice';
+// Animation variant for fadeInUp
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+};
 import DashboardSummary from '@/components/dashboard/DashboardSummary';
 
 interface DashboardShellProps {
@@ -83,23 +89,31 @@ interface DashboardShellProps {
 }
 
 export default function DashboardShell(props: DashboardShellProps) {
-  // ...existing code...
-  const {
-    greeting,
-    quickStats,
-    featuredChart,
-    comparisonCharts,
-    tariffInsights,
-    forecast,
-    insights,
-    toolsActions,
-    sidebar,
-    children,
-    postcode,
-    region,
-    demoMode,
-    userData
-  } = props;
+
+    const hasUserData = !!props.userData && Object.keys(props.userData).length > 0;
+    // Track previous demoMode value
+    const [showContent, setShowContent] = useState(true);
+    const previousDemoModeRef = useRef<boolean | undefined>(undefined);
+
+    const {
+        greeting,
+        quickStats,
+        featuredChart,
+        comparisonCharts,
+        tariffInsights,
+        forecast,
+        insights,
+        toolsActions,
+        sidebar,
+        children,
+        postcode,
+        region,
+        demoMode,
+        userData
+    } = props;
+
+    // Add useBenchmarkData hook to get benchmarkData and loading variable
+    const { data: benchmarkData, loading } = useBenchmarkData(postcode, region);
 
   // ...existing code...
   // Place useEffect calls inside the function body
@@ -111,13 +125,15 @@ export default function DashboardShell(props: DashboardShellProps) {
 
   // Fade transition when switching from demo to personalized
   useEffect(() => {
+    const previousDemoMode = previousDemoModeRef.current;
     if (previousDemoMode && !demoMode) {
       // Transitioning from demo to personalized
       setShowContent(false);
       const timer = setTimeout(() => setShowContent(true), 150);
       return () => clearTimeout(timer);
     }
-  }, [previousDemoMode, demoMode]);
+    previousDemoModeRef.current = demoMode;
+  }, [demoMode]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       {/* Desktop Layout - 2 Column Grid */}

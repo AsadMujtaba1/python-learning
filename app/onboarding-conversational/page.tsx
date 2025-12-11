@@ -561,20 +561,20 @@ export default function ConversationalOnboardingPage() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      manager.state.currentQuestion = Math.max(0, manager.state.currentQuestion - 1);
+                      manager.goToPreviousQuestion();
                       setCurrentQuestion(manager.getCurrentQuestion());
                     }}
-                    disabled={manager.state.currentQuestion === 0}
+                    disabled={manager.getState().currentQuestion === 0}
                   >
                     ← Back
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => {
-                      manager.state.currentQuestion = Math.min(manager.state.currentQuestion + 1, ONBOARDING_QUESTIONS.length - 1);
+                      manager.goToNextQuestion();
                       setCurrentQuestion(manager.getCurrentQuestion());
                     }}
-                    disabled={manager.state.currentQuestion >= ONBOARDING_QUESTIONS.length - 1}
+                    disabled={manager.getState().currentQuestion >= ONBOARDING_QUESTIONS.length - 1}
                   >
                     Next →
                   </Button>

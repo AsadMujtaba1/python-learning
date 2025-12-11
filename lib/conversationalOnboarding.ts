@@ -110,6 +110,19 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
 ];
 
 export class ConversationalOnboardingManager {
+    /**
+     * Move to previous question
+     */
+    goToPreviousQuestion() {
+      this.state.currentQuestion = Math.max(0, this.state.currentQuestion - 1);
+    }
+
+    /**
+     * Move to next question
+     */
+    goToNextQuestion() {
+      this.state.currentQuestion = Math.min(this.state.currentQuestion + 1, ONBOARDING_QUESTIONS.length - 1);
+    }
   private state: OnboardingState;
 
   constructor(initialState?: Partial<OnboardingState>) {

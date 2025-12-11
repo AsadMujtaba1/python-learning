@@ -60,6 +60,16 @@ const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0 }
 };
+
+// Animation variant for staggered children
+const staggerContainer = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.15,
+    },
+  },
+};
 import DashboardSummary from '@/components/dashboard/DashboardSummary';
 
 interface DashboardShellProps {
@@ -112,8 +122,12 @@ export default function DashboardShell(props: DashboardShellProps) {
         userData
     } = props;
 
+
     // Add useBenchmarkData hook to get benchmarkData and loading variable
     const { data: benchmarkData, loading } = useBenchmarkData(postcode, region);
+
+    // Add activeTab state for mobile/tab layout
+    const [activeTab, setActiveTab] = useState('overview');
 
   // ...existing code...
   // Place useEffect calls inside the function body

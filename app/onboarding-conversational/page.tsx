@@ -111,9 +111,11 @@ export default function ConversationalOnboardingPage() {
   }
 
   function isValidUKPostcode(postcode: string): boolean {
-    // UK postcode regex (covers all formats)
-    const ukPostcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i;
-    return ukPostcodeRegex.test(postcode.trim());
+    // Accept UK postcodes with or without spaces
+    const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
+    // UK postcode regex (no space)
+    const ukPostcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\d[A-Z]{2}$/i;
+    return ukPostcodeRegex.test(cleaned);
   }
 
   function handleAnswer(answer: any, displayText?: string) {
@@ -234,26 +236,42 @@ export default function ConversationalOnboardingPage() {
     // Simulate processing delay
     setTimeout(() => {
       // TODO: Replace with actual OCR/extraction API call
-      // For now, simulate extraction
-      const mockExtracted = {
-        supplier: 'Octopus Energy',
-        usage: 2500,
-        tariff: 'Flexible Octopus',
-        cost: 215.50,
-      };
-
+      // Improved extraction: if PDF, show message to user
+      const file = files[0];
+      let mockExtracted;
+      if (file && file.type === 'application/pdf') {
+        mockExtracted = {
+          supplier: '',
+          usage: '',
+          tariff: '',
+          cost: '',
+        };
+        setMessages(prev => [
+          ...prev,
+          {
+            type: 'assistant',
+            message: "PDF extraction is not yet supported. Please upload a photo for best results.",
+            delay: 0,
+          },
+        ]);
+      } else {
+        mockExtracted = {
+          supplier: 'Octopus Energy',
+          usage: 2500,
+          tariff: 'Flexible Octopus',
+          cost: 215.50,
+        };
+        setMessages(prev => [
+          ...prev,
+          {
+            type: 'assistant',
+            message: "Perfect! I found these details from your photo:",
+            delay: 0,
+          },
+        ]);
+      }
       setExtractedData(mockExtracted);
       setEditedData(mockExtracted);
-
-      setMessages(prev => [
-        ...prev,
-        {
-          type: 'assistant',
-          message: "Perfect! I found these details from your photo:",
-          delay: 0,
-        },
-      ]);
-
       setIsUploading(false);
       setShowConfirmation(true);
     }, 2000);
@@ -538,6 +556,29 @@ export default function ConversationalOnboardingPage() {
             <MessageCard delay={1200}>
               <div className={`space-y-4 transition-opacity duration-300 ${showTyping ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 {/* Postcode input */}
+                {/* Navigation buttons */}
+                <div className="flex justify-between mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      manager.state.currentQuestion = Math.max(0, manager.state.currentQuestion - 1);
+                      setCurrentQuestion(manager.getCurrentQuestion());
+                    }}
+                    disabled={manager.state.currentQuestion === 0}
+                  >
+                    ← Back
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      manager.state.currentQuestion = Math.min(manager.state.currentQuestion + 1, ONBOARDING_QUESTIONS.length - 1);
+                      setCurrentQuestion(manager.getCurrentQuestion());
+                    }}
+                    disabled={manager.state.currentQuestion >= ONBOARDING_QUESTIONS.length - 1}
+                  >
+                    Next →
+                  </Button>
+                </div>
                 {currentQuestion.type === 'postcode' && (
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
                     <div className="space-y-2">
@@ -727,24 +768,24 @@ export default function ConversationalOnboardingPage() {
                     <input
                       ref={cameraInputRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/*,application/pdf"
                       capture="environment"
                       onChange={handlePhotoUpload}
                       className="hidden"
-                      aria-label="Take photo with camera"
+                      aria-label="Take photo with camera or upload PDF"
                     />
                     <input
                       ref={galleryInputRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/*,application/pdf"
                       onChange={handlePhotoUpload}
                       className="hidden"
-                      aria-label="Upload photo from gallery"
+                      aria-label="Upload photo or PDF from gallery"
                     />
 
                     {/* Upload instruction */}
                     <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                      📄 Upload your energy bill or smart meter photo
+                      📄 Upload your energy bill, smart meter photo, or PDF
                     </p>
 
                     {/* Upload buttons */}
@@ -761,7 +802,7 @@ export default function ConversationalOnboardingPage() {
                         </>
                       ) : (
                         <>
-                          📸 Take Photo
+                          📸 Take Photo or Upload PDF
                         </>
                       )}
                     </Button>
@@ -772,7 +813,7 @@ export default function ConversationalOnboardingPage() {
                       onClick={() => galleryInputRef.current?.click()}
                       disabled={isUploading}
                     >
-                      📁 Upload from Gallery
+                      📁 Upload from Gallery or PDF
                     </Button>
 
                     {/* Clear skip option */}
@@ -780,7 +821,12 @@ export default function ConversationalOnboardingPage() {
                       <Button
                         className="w-full h-12"
                         variant="ghost"
-                        onClick={handleSkipPhoto}
+                        onClick={() => {
+                          handleSkipPhoto();
+                          setShowSkipOption(false);
+                          manager.skipQuestion();
+                          setTimeout(() => loadNextQuestion(), 600);
+                        }}
                         disabled={isUploading}
                       >
                         Skip - I'll add this later

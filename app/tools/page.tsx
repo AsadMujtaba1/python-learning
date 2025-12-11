@@ -13,7 +13,11 @@ export default function ToolsPage() {
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Tools</h1>
+      <div className="flex items-center justify-between mb-6">
+        <a href="/" className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">← Home</a>
+        <h1 className="text-3xl font-bold">Tools</h1>
+        <span className="w-12" /> {/* Spacer for alignment */}
+      </div>
       <div className="grid gap-6">
         {tools.map((tool) => (
           <Link key={tool.name} href={tool.href} className="block p-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow hover:shadow-lg transition">

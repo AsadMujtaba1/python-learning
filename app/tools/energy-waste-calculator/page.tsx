@@ -86,23 +86,9 @@ export default function EnergyWasteCalculatorPage() {
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-4 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
-            <a href="/" className="text-2xl font-bold text-green-600 dark:text-green-400">
-              💰 Cost Saver
-            </a>
-            <nav className="flex items-center space-x-4">
-              <a
-                href="/dashboard-new"
-                className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-              >
-                Dashboard
-              </a>
-              <a
-                href="/tariffs"
-                className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-              >
-                Compare Tariffs
-              </a>
-            </nav>
+            <a href="/" className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">← Home</a>
+            <span className="text-2xl font-bold text-green-600 dark:text-green-400">💰 Cost Saver</span>
+            <span className="w-12" /> {/* Spacer for alignment */}
           </div>
         </div>
       </header>

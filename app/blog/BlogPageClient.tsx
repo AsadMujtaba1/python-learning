@@ -24,9 +24,7 @@ export default function BlogPageClient({ initialPosts }: BlogPageClientProps) {
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/dashboard-new" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm mb-2 inline-block">
-            ← Back to Dashboard
-          </Link>
+          {/* Removed 'Back to Dashboard' link for public blog page */}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             📝 Energy Saving Blog
           </h1>

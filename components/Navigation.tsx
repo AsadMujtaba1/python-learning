@@ -30,6 +30,9 @@ export default function Navigation() {
     { href: '/settings', label: 'Settings' },
   ] : [];
 
+  // Remove dashboard from navLinks for non-authenticated users
+  // (Dashboard is only in userLinks)
+
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -95,9 +98,10 @@ export default function Navigation() {
                     Sign In
                   </Button>
                 </Link>
+                {/* TODO: Team review: Is this the best homepage placement for the 'Sign Up' CTA? */}
                 <Link href="/sign-up">
                   <Button variant="primary" size="sm">
-                    Get Started Free
+                    Sign Up
                   </Button>
                 </Link>
               </>
@@ -178,9 +182,10 @@ export default function Navigation() {
                       Sign In
                     </Button>
                   </Link>
+                  {/* TODO: Team review: Is this the best homepage placement for the 'Sign Up' CTA? */}
                   <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)}>
                     <Button variant="primary" className="w-full">
-                      Get Started Free
+                      Sign Up
                     </Button>
                   </Link>
                 </>

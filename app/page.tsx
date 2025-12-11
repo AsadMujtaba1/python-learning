@@ -28,34 +28,37 @@ export default function Home() {
             {/* Main Headline */}
             <div className="space-y-4">
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight">
-                Smart Savings for
-                <span className="block text-yellow-300 mt-2">Every Household Bill</span>
+                Smarter Insights for Every Household Bill
               </h1>
               <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto">
-                Your all-in-one money-saving platform. Compare <span className="font-semibold text-white">energy tariffs</span>, and soon <span className="font-semibold text-white">broadband</span>, <span className="font-semibold text-white">insurance</span>, and <span className="font-semibold text-white">flight deals</span>—all in one place.
+                Understand your usage, spot waste, and discover when switching really makes sense. Start with energy today – broadband, insurance and flights are coming next.
               </p>
             </div>
-            
-            {/* Trust Indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-blue-100">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            {/* Bullets */}
+            <ul className="text-blue-100 text-base sm:text-lg max-w-xl mx-auto text-left space-y-2 mt-6 mb-6 list-disc list-inside">
+              <li>See if you’re overpaying compared to similar UK homes</li>
+              <li>Get plain-English tips tailored to your home and local weather</li>
+              <li>Only switch when it genuinely saves you money</li>
+            </ul>
+            {/* CTA Button */}
+            <div className="pt-4" id="start-button">
+              <button 
+                onClick={() => router.push('/onboarding-conversational')}
+                className="group relative inline-flex items-center justify-center px-10 py-5 text-lg font-bold text-blue-700 bg-white rounded-full hover:bg-blue-50 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105"
+              >
+                Start with Energy Insights
+                <svg 
+                  className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
-                <span>100% Free</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span>2 Minute Setup</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span>No Signup Required</span>
-              </div>
+              </button>
+              <p className="text-sm text-blue-100 mt-4">
+                No account needed for your first insight • 100% free to use
+              </p>
             </div>
 
             {/* CTA Button */}
@@ -158,27 +161,25 @@ export default function Home() {
               How It Works
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400">
-              Start saving in three simple steps
+              
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">1</div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Tell Us About You</h3>
-              <p className="text-gray-600 dark:text-gray-400">Answer a few quick questions about your energy usage—takes just 2 minutes.</p>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Tell us about your home</h3>
+              <p className="text-gray-600 dark:text-gray-400">Share quick details like postcode, home type, heating.</p>
             </div>
-            
             <div className="text-center">
               <div className="w-16 h-16 bg-purple-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">2</div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Get Personalized Tips</h3>
-              <p className="text-gray-600 dark:text-gray-400">Receive tailored recommendations and compare the best tariffs for your needs.</p>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">We analyse your energy pattern</h3>
+              <p className="text-gray-600 dark:text-gray-400">We compare your usage to similar UK homes and local weather + price data.</p>
             </div>
-            
             <div className="text-center">
               <div className="w-16 h-16 bg-green-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">3</div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Start Saving Money</h3>
-              <p className="text-gray-600 dark:text-gray-400">Track your savings and watch your money grow with our easy dashboard.</p>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Get clear actions to save</h3>
+              <p className="text-gray-600 dark:text-gray-400">Practical tips + when switching truly saves money.</p>
             </div>
           </div>
         </div>
@@ -192,7 +193,7 @@ export default function Home() {
               Why Cost Saver?
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Built with cutting-edge technology to help you save more, effortlessly
+              
             </p>
           </div>
           
@@ -203,7 +204,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Data-Driven Insights</h3>
-                <p className="text-gray-600 dark:text-gray-400">Powered by real-time market data and your usage patterns to deliver accurate, personalized recommendations.</p>
+                <p className="text-gray-600 dark:text-gray-400">We combine your home details with trusted UK pricing data to give realistic, personalised savings estimates.</p>
               </div>
             </div>
             
@@ -212,8 +213,8 @@ export default function Home() {
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center text-white text-xl font-bold">🔄</div>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Automatic Comparisons</h3>
-                <p className="text-gray-600 dark:text-gray-400">No more manual searching. We continuously monitor and compare thousands of tariffs to find you the best deals.</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Automatic Monitoring</h3>
+                <p className="text-gray-600 dark:text-gray-400">We watch the market and notify you when better options appear.</p>
               </div>
             </div>
             
@@ -222,8 +223,8 @@ export default function Home() {
                 <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center text-white text-xl font-bold">🧠</div>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Smarter Predictions</h3>
-                <p className="text-gray-600 dark:text-gray-400">AI-powered forecasting helps you anticipate price changes and make informed decisions before they happen.</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Smart Forecasts, Not Guesswork</h3>
+                <p className="text-gray-600 dark:text-gray-400">We factor in seasonality/weather so you aren’t surprised by bill changes.</p>
               </div>
             </div>
             
@@ -232,8 +233,8 @@ export default function Home() {
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center text-white text-xl font-bold">🚀</div>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Multi-Category Expansion</h3>
-                <p className="text-gray-600 dark:text-gray-400">Starting with energy, expanding to broadband, insurance, and flights—all your household savings in one platform.</p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">One place for all your bills (soon)</h3>
+                <p className="text-gray-600 dark:text-gray-400">Start with energy; broadband, insurance, travel coming soon.</p>
               </div>
             </div>
           </div>

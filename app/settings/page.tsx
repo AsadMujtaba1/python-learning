@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { UserHomeData } from '@/types';
+import type { UserSavingsProfile } from '@/types/UserSavingsProfile';
 import type { ExpertProfile, ProfileSection } from '@/lib/types/userProfile';
 import { PROFILE_SECTIONS } from '@/lib/types/userProfile';
 import { calculateCompleteness, calculatePotentialSavings } from '@/lib/utils/profileAnalysis';
@@ -39,7 +39,7 @@ export default function SettingsPage() {
 function SettingsContent() {
   const router = useRouter();
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Partial<ExpertProfile>>({});
+  const [profile, setProfile] = useState<Partial<UserSavingsProfile>>({});
   const [userProfile, setUserProfile] = useState<FirebaseUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,19 +58,9 @@ function SettingsContent() {
 
   const loadProfile = () => {
     try {
-      const storedData = localStorage.getItem('userHomeData');
-      const storedProfile = localStorage.getItem('userProfile');
-      
+      const storedData = localStorage.getItem('userSavingsProfile') || localStorage.getItem('userHomeData');
       if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        setProfile({
-          postcode: parsedData.postcode,
-          homeType: parsedData.homeType,
-          occupants: parsedData.occupants,
-          heatingType: parsedData.heatingType,
-          constructionYear: parsedData.constructionYear,
-          ...(storedProfile ? JSON.parse(storedProfile) : {})
-        });
+        setProfile(JSON.parse(storedData));
       }
       setLoading(false);
     } catch (err) {
@@ -82,30 +72,26 @@ function SettingsContent() {
   const saveProfile = async () => {
     setSaving(true);
     try {
-      // Save to localStorage (backward compatibility)
-      localStorage.setItem('userProfile', JSON.stringify(profile));
-      localStorage.setItem('userHomeData', JSON.stringify({
-        postcode: profile.postcode,
-        homeType: profile.homeType,
-        occupants: profile.occupants,
-        heatingType: profile.heatingType,
-        constructionYear: profile.constructionYear
-      }));
+      // Save canonical profile to localStorage
+      localStorage.setItem('userSavingsProfile', JSON.stringify(profile));
+      localStorage.setItem('userHomeData', JSON.stringify(profile));
 
       // Save to Firestore if user is logged in
       if (user && userProfile) {
         await updateUserProfile(user.uid, {
-          postcode: profile.postcode,
-          homeType: profile.homeType as any,
-          occupants: profile.occupants,
-          heatingType: profile.heatingType as any,
+          savingsProfileV1: profile,
+          postcode: profile.household?.postcode,
+          homeType: profile.household?.homeType,
+          occupants: profile.household?.occupants,
+          onboardingCompleted: true,
+          profileCompleteness: 100,
+          lastCompleted: new Date().toISOString(),
         });
-        
         // Reload user profile
         const updated = await getUserProfile(user.uid);
         if (updated) setUserProfile(updated);
       }
-      
+
       setSaveMessage({ type: 'success', text: 'Profile saved successfully!' });
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {

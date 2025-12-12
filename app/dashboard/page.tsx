@@ -1,47 +1,64 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserHomeData, EnergyCostData, ForecastData, SavingTip } from '@/types';
+import { EnergyCostData, ForecastData, SavingTip } from '@/types';
 import { calculateEnergyCost, generateForecast, calculateWeatherImpact } from '@/utils/energyCalculations';
 import { generateSavingTips, getCurrentWeather } from '@/utils/savingTips';
 import OnboardingGate from '@/components/OnboardingGate';
 import OnboardingChatPopup from '@/components/OnboardingChatPopup';
+import { useUserSavingsProfile } from '@/lib/hooks/useUserSavingsProfile';
+import type { UserSavingsProfile } from '@/types/UserSavingsProfile';
+
+// Helper: Map UserSavingsProfile to UserHomeData (legacy downstream types)
+function mapProfileToUserHomeData(profile: UserSavingsProfile): any {
+  // Map fields as needed for downstream calculations
+  return {
+    postcode: profile.household?.postcode,
+    homeType: profile.household?.homeType,
+    occupants: profile.household?.occupants,
+    supplier: profile.energy?.supplier,
+    tariff: profile.energy?.tariff,
+    standingCharge: profile.energy?.standingCharge,
+    unitRate: profile.energy?.unitRate,
+    paymentType: profile.energy?.paymentType,
+    usage: profile.energy?.usage,
+    cost: profile.energy?.cost,
+    heatingType: profile.household?.heatingType || profile.energy?.heatingType,
+    profileCompleteness: 100, // TODO: calculate real completeness if needed
+    // Add more mappings as needed
+  };
+}
 
 function DashboardPageContent() {
   const router = useRouter();
-  const [userData, setUserData] = useState<UserHomeData | null>(null);
+  const { profile, loading } = useUserSavingsProfile();
+  const [userData, setUserData] = useState<any>(null);
   const [costData, setCostData] = useState<EnergyCostData | null>(null);
   const [forecast, setForecast] = useState<ForecastData[]>([]);
   const [tips, setTips] = useState<SavingTip[]>([]);
   const [weather, setWeather] = useState({ temperature: 12, condition: 'Cloudy' });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load user data from localStorage
-    const storedData = localStorage.getItem('userHomeData');
-    if (!storedData) {
-      router.push('/onboarding-conversational');
-      return;
+    if (!loading) {
+      if (!profile) {
+        router.push('/onboarding-conversational');
+        return;
+      }
+      const mapped = mapProfileToUserHomeData(profile);
+      setUserData(mapped);
+      // Calculate costs
+      const costs = calculateEnergyCost(mapped);
+      setCostData(costs);
+      // Generate forecast
+      const forecastData = generateForecast(mapped, weather.temperature);
+      setForecast(forecastData);
+      // Get saving tips
+      const savingTips = generateSavingTips(mapped.heatingType, mapped.homeType);
+      setTips(savingTips);
     }
-
-    const parsedData: UserHomeData = JSON.parse(storedData);
-    setUserData(parsedData);
-
-    // Calculate costs
-    const costs = calculateEnergyCost(parsedData);
-    setCostData(costs);
-
-    // Generate forecast
-    const forecastData = generateForecast(parsedData, weather.temperature);
-    setForecast(forecastData);
-
-    // Get saving tips
-    const savingTips = generateSavingTips(parsedData.heatingType, parsedData.homeType);
-    setTips(savingTips);
-
-    setLoading(false);
-  }, [router, weather.temperature]);
+  }, [profile, loading, weather.temperature, router]);
 
   if (loading) {
     return (
@@ -55,7 +72,6 @@ function DashboardPageContent() {
   }
 
   const weatherImpact = calculateWeatherImpact(weather.temperature);
-
   // Check if onboarding is incomplete (profile completeness < 100 or missing userData)
   const needsOnboarding = !userData || (userData.profileCompleteness !== undefined && userData.profileCompleteness < 100);
   const [onboardingOpen, setOnboardingOpen] = useState(false);

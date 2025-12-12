@@ -72,6 +72,7 @@ const staggerContainer = {
   },
 };
 import DashboardSummary from '@/components/dashboard/DashboardSummary';
+import { useUserSavingsProfile } from '@/lib/hooks/useUserSavingsProfile';
 
 interface DashboardShellProps {
   greeting?: ReactNode;
@@ -129,30 +130,22 @@ export default function DashboardShell(props: DashboardShellProps) {
     // Add activeTab state for mobile/tab layout
     const [activeTab, setActiveTab] = useState('overview');
 
-    // Load user data from localStorage
-    const [localUserData, setLocalUserData] = useState<any>(null);
+    // Use canonical profile from hook
+    const { profile, loading } = useUserSavingsProfile();
     const [profileComplete, setProfileComplete] = useState(false);
 
     useEffect(() => {
-      // Load canonical UserSavingsProfile from localStorage
-      if (typeof window !== 'undefined') {
-        const data = localStorage.getItem('userSavingsProfile') || localStorage.getItem('userHomeData');
-        if (data) {
-          try {
-            const parsed = JSON.parse(data);
-            setLocalUserData(parsed);
-            // Check completeness for v1
-            if (parsed.version === 1 && parsed.household && parsed.energy) {
-              setProfileComplete(!!parsed.household.occupants && !!parsed.household.homeType && !!parsed.energy.supplier);
-            } else {
-              // fallback for legacy
-              const required = ['postcode', 'supplier', 'usage', 'tariff', 'cost'];
-              setProfileComplete(required.every((k) => parsed[k] && parsed[k] !== ''));
-            }
-          } catch {}
+      if (!loading && profile) {
+        // Check completeness for v1
+        if (profile.version === 1 && profile.household && profile.energy) {
+          setProfileComplete(!!profile.household.occupants && !!profile.household.homeType && !!profile.energy.supplier);
+        } else {
+          // fallback for legacy
+          const required = ['postcode', 'supplier', 'usage', 'tariff', 'cost'];
+          setProfileComplete(required.every((k) => profile[k] && profile[k] !== ''));
         }
       }
-    }, []);
+    }, [profile, loading]);
 
   // Place useEffect calls inside the function body
   useEffect(() => {

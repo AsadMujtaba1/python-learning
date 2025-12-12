@@ -1,3 +1,4 @@
+"use client";
 // Feature flag for future categories
 const FEATURE_BROADBAND = false;
 const FEATURE_INSURANCE = false;
@@ -6,7 +7,6 @@ const FEATURE_FLIGHTS = false;
 // import type { UserSavingsProfile } from '@/types/UserSavingsProfile';
 // Add interests to UserSavingsProfile type if not present
 // interface UserSavingsProfileV1 { ... interests?: string[]; ... }
-'use client';
 
 /**
  * CONVERSATIONAL ONBOARDING PAGE
@@ -42,9 +42,9 @@ const POPULAR_SUPPLIERS = [
 ];
 
 // If rendered as a route, show as a modal overlay for consistency
-import Modal from '@/components/Modal';
 
-export default function ConversationalOnboardingPage({ isPopup = false, onComplete }: { isPopup?: boolean; onComplete?: () => void } = {}) {
+
+// Remove Home link and modal header if isPopup
   const router = useRouter();
   const [manager] = useState(() => new ConversationalOnboardingManager());
   const [currentQuestion, setCurrentQuestion] = useState<OnboardingQuestion | null>(null);
@@ -449,45 +449,34 @@ export default function ConversationalOnboardingPage({ isPopup = false, onComple
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 ${isPopup ? 'fixed inset-0 z-50 overflow-auto' : ''}`}>
-      {/* Fixed header */}
-      <div className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <a href="/" className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-semibold hover:underline">
-              <Home className="w-5 h-5" />
-              Home
-            </a>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg ml-2">
+    <div className={isPopup
+      ? 'bg-white dark:bg-gray-900 rounded-b-2xl shadow-xl w-full h-full flex flex-col focus:outline-none'
+      : 'min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900'}
+      tabIndex={isPopup ? 0 : undefined}
+      aria-label={isPopup ? 'Onboarding assistant chat' : undefined}
+      role={isPopup ? 'dialog' : undefined}
+      aria-modal={isPopup ? 'true' : undefined}
+    >
+      {/* Header for full-page only */}
+      {!isPopup && (
+        <div className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 z-10">
+          <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg">
               <Sparkles className="w-5 h-5" />
             </div>
             <span className="font-semibold text-gray-900 dark:text-white">Cost Saver</span>
           </div>
-
-          {manager.isComplete() && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleGoDashboard}
-              className="flex items-center gap-2"
-            >
-              <Home className="w-4 h-4" />
-              Dashboard
-            </Button>
-          )}
+          {/* Progress bar */}
+          <div className="w-full bg-gray-200 dark:bg-gray-700 h-1">
+            <div
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-1 transition-all duration-500"
+              style={{ width: `${manager.getProgress()}%` }}
+            />
+          </div>
         </div>
-
-        {/* Progress bar */}
-        <div className="w-full bg-gray-200 dark:bg-gray-700 h-1">
-          <div
-            className="bg-gradient-to-r from-blue-500 to-indigo-600 h-1 transition-all duration-500"
-            style={{ width: `${manager.getProgress()}%` }}
-          />
-        </div>
-      </div>
-
+      )}
       {/* Chat container */}
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-24 pb-32 min-h-[calc(100vh-6rem)]">
+      <div className={isPopup ? 'flex-1 overflow-y-auto p-4 pt-2' : 'max-w-2xl mx-auto px-4 sm:px-6 pt-24 pb-32 min-h-[calc(100vh-6rem)]'}>
         <div className="space-y-4 py-4">
           {/* Conversation history */}
           {messages.map((msg, idx) => (
@@ -630,7 +619,13 @@ export default function ConversationalOnboardingPage({ isPopup = false, onComple
 
                 {/* Postcode input */}
                 {currentQuestion.type === 'postcode' && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+                  <form
+                    className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg"
+                    onSubmit={e => {
+                      e.preventDefault();
+                      handlePostcodeSubmit();
+                    }}
+                  >
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block text-center">
                         UK Postcode
@@ -640,11 +635,6 @@ export default function ConversationalOnboardingPage({ isPopup = false, onComple
                         placeholder="SW1A 1AA"
                         value={inputValue}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
-                        onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                          if (e.key === 'Enter' && inputValue.length >= 5) {
-                            handleAnswer(inputValue, inputValue);
-                          }
-                        }}
                         className="text-center text-lg h-14 border-2"
                         maxLength={16}
                         autoFocus
@@ -656,12 +646,17 @@ export default function ConversationalOnboardingPage({ isPopup = false, onComple
                     <Button
                       className="w-full mt-4 h-12"
                       disabled={inputValue.length < 5}
-                      onClick={() => handleAnswer(inputValue, inputValue)}
+                      type="submit"
                     >
                       Continue <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
-                  </div>
+                  </form>
                 )}
+  // Handle postcode form submit (Enter or button)
+  function handlePostcodeSubmit() {
+    if (inputValue.length < 5) return;
+    handleAnswer(inputValue, inputValue);
+  }
 
                 {/* Options with cards */}
                 {currentQuestion.options && (

@@ -9,7 +9,7 @@ export default function Footer() {
   const footerLinks = {
     product: [
       { label: 'Energy Efficient Products', href: '/products' },
-      { label: 'Recommended Products', href: '/products?type=recommended' },
+      { label: 'AI Recommended Products', href: '/products?type=recommended' },
       { label: 'Tariff Comparison', href: '/tariffs' },
     ],
     support: [

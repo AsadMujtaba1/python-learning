@@ -5,6 +5,11 @@
 			"label": "Start Next.js dev server",
 			"type": "shell",
 			"command": "npm run dev"
+		},
+		{
+			"label": "Start Next.js dev server",
+			"type": "shell",
+			"command": "npm run dev"
 		}
 	]
 }

@@ -18,7 +18,7 @@ export default function Navigation() {
     { href: '/dashboard-new', label: 'Dashboard' }, // Always visible
     { href: '/about', label: 'About' },
     { href: '/tools', label: 'Tools' },
-    { href: '/products', label: 'Recommended Products' },
+    { href: '/products', label: 'AI Recommended Products' },
     { href: '/blog', label: 'Blogs' },
     { href: '/faq', label: 'FAQ' },
     { href: '/contact', label: 'Contact' },

@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import WelcomeTour from '@/components/WelcomeTour';
 import CompactBlogPreview from '@/components/CompactBlogPreview';
 import CompactNewsFeed from '@/components/CompactNewsFeed';
+import OnboardingChatPopup from '@/components/OnboardingChatPopup';
 
 export default function Home() {
   const router = useRouter();
@@ -40,8 +41,8 @@ export default function Home() {
               <li>Get plain-English tips tailored to your home and local weather</li>
               <li>Only switch when it genuinely saves you money</li>
             </ul>
-            {/* CTA Button */}
-            <div className="pt-4" id="start-button">
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4" id="start-button">
               <button 
                 onClick={() => router.push('/onboarding-conversational')}
                 className="group relative inline-flex items-center justify-center px-10 py-5 text-lg font-bold text-blue-700 bg-white rounded-full hover:bg-blue-50 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105"
@@ -56,28 +57,21 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </button>
-              <p className="text-sm text-blue-100 mt-4">
+              <button
+                onClick={() => router.push('/dashboard-new')}
+                className="group relative inline-flex items-center justify-center px-10 py-5 text-lg font-bold text-white bg-gradient-to-r from-blue-700 to-purple-700 rounded-full hover:from-blue-800 hover:to-purple-800 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105"
+              >
+                <svg className="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6" />
+                </svg>
+                Go to Dashboard
+              </button>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
+              <p className="text-sm text-blue-100">
                 No account needed for your first insight • 100% free to use
               </p>
-            </div>
-
-            {/* CTA Button */}
-            <div className="pt-4" id="start-button">
-              <button 
-                onClick={() => router.push('/onboarding-conversational')}
-                className="group relative inline-flex items-center justify-center px-10 py-5 text-lg font-bold text-blue-700 bg-white rounded-full hover:bg-blue-50 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105"
-              >
-                Start Saving Now
-                <svg 
-                  className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
-              <p className="text-sm text-blue-100 mt-4">
+              <p className="text-sm text-blue-100">
                 Join <span className="font-bold text-yellow-300">1,000+</span> users saving money every month 💰
               </p>
             </div>
@@ -328,6 +322,7 @@ export default function Home() {
         </div>
       </section>
       <Footer />
+      <OnboardingChatPopup />
     </div>
   );
 }

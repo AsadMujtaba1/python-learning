@@ -33,6 +33,7 @@ import {
   ArrowUpDown,
   Bell
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 // Import all chart components
 import WholesalePriceTrendChart from '@/components/charts/WholesalePriceTrendChart';
@@ -99,7 +100,6 @@ interface DashboardShellProps {
 }
 
 export default function DashboardShell(props: DashboardShellProps) {
-
     const hasUserData = !!props.userData && Object.keys(props.userData).length > 0;
     // Track previous demoMode value
     const [showContent, setShowContent] = useState(true);
@@ -129,7 +129,26 @@ export default function DashboardShell(props: DashboardShellProps) {
     // Add activeTab state for mobile/tab layout
     const [activeTab, setActiveTab] = useState('overview');
 
-  // ...existing code...
+    // Load user data from localStorage
+    const [localUserData, setLocalUserData] = useState<any>(null);
+    const [profileComplete, setProfileComplete] = useState(false);
+
+    useEffect(() => {
+      // Load user data from localStorage
+      if (typeof window !== 'undefined') {
+        const data = localStorage.getItem('userHomeData');
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            setLocalUserData(parsed);
+            // Simple completeness check: all required fields present and non-empty
+            const required = ['postcode', 'supplier', 'usage', 'tariff', 'cost'];
+            setProfileComplete(required.every((k) => parsed[k] && parsed[k] !== ''));
+          } catch {}
+        }
+      }
+    }, []);
+
   // Place useEffect calls inside the function body
   useEffect(() => {
     if (demoMode && DASHBOARD_CONFIG.features.toastNotifications) {
@@ -155,7 +174,18 @@ export default function DashboardShell(props: DashboardShellProps) {
         
         {/* Sidebar - Fixed Width */}
         <aside className="space-y-6">
-          {sidebar || <DefaultSidebar demoMode={demoMode} />}
+          {/* Profile completion status */}
+          <Card className="mb-4">
+            <CardContent className="flex items-center gap-3 py-4">
+              <span className="font-medium text-gray-700 dark:text-gray-200">Profile Status:</span>
+              {profileComplete ? (
+                <Badge className="bg-green-500 text-white">Completed</Badge>
+              ) : (
+                <Badge className="bg-yellow-500 text-white">Complete your profile</Badge>
+              )}
+            </CardContent>
+          </Card>
+          {props.sidebar || <DefaultSidebar demoMode={props.demoMode} />}
         </aside>
 
         {/* Main Content Area */}
@@ -186,11 +216,11 @@ export default function DashboardShell(props: DashboardShellProps) {
             transition={{ duration: 0.5 }}
           >
             <DashboardSummary
-              userCost={3.85}
+              userCost={localUserData?.cost || 3.85}
               regionalAverage={4.20}
               nationalAverage={4.50}
-              region={region}
-              hasUserData={hasUserData}
+              region={localUserData?.postcode || props.region}
+              hasUserData={!!localUserData}
             />
           </motion.section>
 

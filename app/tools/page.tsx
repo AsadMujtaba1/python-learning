@@ -8,7 +8,11 @@ export default function ToolsPage() {
       description: "Estimate your daily energy costs and savings.",
       href: "/tools/energy-waste-calculator",
     },
-    // Add more tools here later
+    {
+      name: "EV Charging",
+      description: "Estimate charging cost and cost per mile.",
+      href: "/tools/ev-charging",
+    },
   ];
 
   return (

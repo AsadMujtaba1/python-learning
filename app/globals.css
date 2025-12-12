@@ -1,3 +1,101 @@
+/* Blog Markdown Custom Styles */
+.prose {
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-size: 1.18rem;
+  line-height: 1.85;
+  letter-spacing: 0.01em;
+}
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-top: 2.5rem;
+  margin-bottom: 1.2rem;
+}
+.prose h1 {
+  font-size: 2.6rem;
+  color: #2563eb;
+  margin-bottom: 2rem;
+}
+.prose h2 {
+  font-size: 2rem;
+  color: #7c3aed;
+  border-bottom: 2px solid #ede9fe;
+  padding-bottom: 0.4rem;
+}
+.prose h3 {
+  font-size: 1.4rem;
+  color: #059669;
+  font-style: italic;
+}
+.prose p {
+  margin-bottom: 1.3em;
+  color: #22223b;
+}
+.dark .prose p {
+  color: #e0e7ef;
+}
+.prose ul, .prose ol {
+  margin-bottom: 1.2em;
+  padding-left: 1.5em;
+}
+.prose li {
+  margin-bottom: 0.5em;
+  font-size: 1.08em;
+}
+.prose blockquote {
+  background: #f0f7ff;
+  border-left: 5px solid #2563eb;
+  color: #1e293b;
+  padding: 1.1em 1.5em;
+  margin: 2em 0;
+  border-radius: 0.7em;
+  font-size: 1.08em;
+}
+.dark .prose blockquote {
+  background: #1e293b;
+  color: #c7d2fe;
+  border-left: 5px solid #7c3aed;
+}
+.prose code, .prose pre {
+  background: #f3f4f6;
+  color: #be185d;
+  border-radius: 0.4em;
+  padding: 0.2em 0.5em;
+  font-size: 1em;
+}
+.dark .prose code, .dark .prose pre {
+  background: #232946;
+  color: #f472b6;
+}
+.prose table {
+  border-radius: 0.6em;
+  overflow: hidden;
+  margin-bottom: 2em;
+}
+.prose th, .prose td {
+  padding: 0.7em 1.2em;
+  border-bottom: 1px solid #e5e7eb;
+}
+.prose th {
+  background: #f3f4f6;
+  font-weight: 700;
+}
+.dark .prose th {
+  background: #232946;
+}
+.prose img {
+  border-radius: 1em;
+  box-shadow: 0 4px 24px 0 rgba(37,99,235,0.08);
+  margin: 2em 0;
+}
+.prose hr {
+  margin: 2.5em 0;
+  border-top: 2px solid #e5e7eb;
+}
+.dark .prose hr {
+  border-top: 2px solid #232946;
+}
 @import "tailwindcss";
 
 :root {

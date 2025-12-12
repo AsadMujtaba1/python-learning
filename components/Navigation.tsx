@@ -15,6 +15,7 @@ export default function Navigation() {
 
   const navLinks = [
     { href: '/', label: 'Home' },
+    { href: '/dashboard-new', label: 'Dashboard' }, // Always visible
     { href: '/about', label: 'About' },
     { href: '/tools', label: 'Tools' },
     { href: '/products', label: 'Recommended Products' },
@@ -24,7 +25,6 @@ export default function Navigation() {
   ];
 
   const userLinks = user ? [
-    { href: '/dashboard-new', label: 'Dashboard' },
     { href: '/tariffs', label: 'Compare Tariffs' },
     { href: '/account', label: 'Account' },
     { href: '/settings', label: 'Settings' },

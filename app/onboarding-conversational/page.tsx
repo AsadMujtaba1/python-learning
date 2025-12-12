@@ -30,7 +30,7 @@ const POPULAR_SUPPLIERS = [
   { value: 'ovo', label: 'OVO Energy', icon: '🌟' },
 ];
 
-export default function ConversationalOnboardingPage() {
+export default function ConversationalOnboardingPage({ isPopup = false, onComplete }: { isPopup?: boolean; onComplete?: () => void } = {}) {
   const router = useRouter();
   const [manager] = useState(() => new ConversationalOnboardingManager());
   const [currentQuestion, setCurrentQuestion] = useState<OnboardingQuestion | null>(null);
@@ -66,7 +66,7 @@ export default function ConversationalOnboardingPage() {
 
   function loadNextQuestion() {
     setShowTyping(true);
-    
+
     // Simulate thinking delay
     setTimeout(() => {
       const next = manager.getCurrentQuestion();
@@ -76,26 +76,29 @@ export default function ConversationalOnboardingPage() {
       setInputValue('');
 
       if (next) {
-        // Add assistant messages
-        const newMessages: Array<{ type: 'assistant' | 'user'; message: string; delay: number }> = [];
-        
-        if (next.message) {
-          newMessages.push({
-            type: 'assistant' as const,
-            message: next.message,
-            delay: 0,
-          });
-        }
-
-        if (next.secondaryMessage) {
-          newMessages.push({
-            type: 'assistant' as const,
-            message: next.secondaryMessage,
-            delay: 800,
-          });
-        }
-
-        setMessages(prev => [...prev, ...newMessages]);
+        // Add assistant messages only if not already present anywhere in chat history
+        setMessages(prev => {
+          const newMessages: Array<{ type: 'assistant' | 'user'; message: string; delay: number }> = [];
+          if (next.message) {
+            if (!prev.some(m => m.type === 'assistant' && m.message === next.message)) {
+              newMessages.push({
+                type: 'assistant' as const,
+                message: next.message,
+                delay: 0,
+              });
+            }
+          }
+          if (next.secondaryMessage) {
+            if (!prev.some(m => m.type === 'assistant' && m.message === next.secondaryMessage)) {
+              newMessages.push({
+                type: 'assistant' as const,
+                message: next.secondaryMessage,
+                delay: 800,
+              });
+            }
+          }
+          return [...prev, ...newMessages];
+        });
 
         // Show skip option immediately if skippable
         if (next.skippable) {
@@ -111,11 +114,11 @@ export default function ConversationalOnboardingPage() {
   }
 
   function isValidUKPostcode(postcode: string): boolean {
-    // Accept UK postcodes with or without spaces
+    // Accept UK postcodes with or without spaces, and auto-format
     const cleaned = postcode.replace(/\s+/g, '').toUpperCase();
-    // UK postcode regex (no space)
-    const ukPostcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\d[A-Z]{2}$/i;
-    return ukPostcodeRegex.test(cleaned);
+    // UK postcode regex (with or without space)
+    const ukPostcodeRegex = /^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i;
+    return ukPostcodeRegex.test(postcode.trim()) || ukPostcodeRegex.test(cleaned);
   }
 
   function handleAnswer(answer: any, displayText?: string) {
@@ -189,8 +192,6 @@ export default function ConversationalOnboardingPage() {
     // Save final data
     const answers = manager.getAnswers();
     localStorage.setItem('userHomeData', JSON.stringify(answers));
-
-    // Show completion message
     setMessages(prev => [
       ...prev,
       {
@@ -204,15 +205,18 @@ export default function ConversationalOnboardingPage() {
         delay: 800,
       },
     ]);
-
-    // Navigate after delay - check for return URL
     setTimeout(() => {
-      const returnUrl = sessionStorage.getItem('returnAfterOnboarding');
-      if (returnUrl) {
-        sessionStorage.removeItem('returnAfterOnboarding');
-        router.push(returnUrl);
+      if (onComplete) {
+        onComplete();
+        setTimeout(() => router.push('/dashboard-new/'), 500); // Give popup time to close
       } else {
-        router.push('/dashboard-new/');
+        const returnUrl = sessionStorage.getItem('returnAfterOnboarding');
+        if (returnUrl) {
+          sessionStorage.removeItem('returnAfterOnboarding');
+          router.push(returnUrl);
+        } else {
+          router.push('/dashboard-new/');
+        }
       }
     }, 2500);
   }
@@ -236,24 +240,28 @@ export default function ConversationalOnboardingPage() {
     // Simulate processing delay
     setTimeout(() => {
       // TODO: Replace with actual OCR/extraction API call
-      // Improved extraction: if PDF, show message to user
+      // Improved extraction: if PDF, show message to user and allow skip/next
       const file = files[0];
       let mockExtracted;
       if (file && file.type === 'application/pdf') {
-        mockExtracted = {
-          supplier: '',
-          usage: '',
-          tariff: '',
-          cost: '',
-        };
-        setMessages(prev => [
-          ...prev,
-          {
-            type: 'assistant',
-            message: "PDF extraction is not yet supported. Please upload a photo for best results.",
-            delay: 0,
-          },
-        ]);
+        setMessages(prev => {
+          // Only add the PDF warning if not already present
+          if (!prev.some(m => m.type === 'assistant' && m.message === "PDF extraction is not yet supported. You can skip this step or try uploading a photo instead.")) {
+            return [
+              ...prev,
+              {
+                type: 'assistant',
+                message: "PDF extraction is not yet supported. You can skip this step or try uploading a photo instead.",
+                delay: 0,
+              },
+            ];
+          }
+          return prev;
+        });
+        setIsUploading(false);
+        setShowSkipOption(true); // Always show skip
+        setShowConfirmation(false); // Hide confirmation UI if it was open
+        return;
       } else {
         mockExtracted = {
           supplier: 'Octopus Energy',
@@ -267,7 +275,7 @@ export default function ConversationalOnboardingPage() {
             type: 'assistant',
             message: "Perfect! I found these details from your photo:",
             delay: 0,
-          },
+          }
         ]);
       }
       setExtractedData(mockExtracted);
@@ -346,12 +354,16 @@ export default function ConversationalOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 ${isPopup ? 'fixed inset-0 z-50 overflow-auto' : ''}`}>
       {/* Fixed header */}
       <div className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg">
+            <a href="/" className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+              <Home className="w-5 h-5" />
+              Home
+            </a>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg ml-2">
               <Sparkles className="w-5 h-5" />
             </div>
             <span className="font-semibold text-gray-900 dark:text-white">Cost Saver</span>
@@ -389,164 +401,59 @@ export default function ConversationalOnboardingPage() {
               type={msg.type}
               message={msg.message}
               icon={msg.type === 'assistant' ? <Sparkles className="w-5 h-5" /> : undefined}
-              delay={msg.delay}
-              animate={idx >= messages.length - 2}
             />
           ))}
 
-          {/* Typing indicator */}
-          {showTyping && <TypingIndicator />}
-
-          {/* Extraction Confirmation UI */}
-          {showConfirmation && extractedData && (
-            <MessageCard delay={800}>
-              <div className="bg-blue-50 dark:bg-gray-700 rounded-2xl p-5 space-y-4">
-                {!editMode ? (
-                  <>
-                    {/* Display extracted data */}
-                    <div className="space-y-3">
-                      {extractedData.supplier && (
-                        <div className="bg-white dark:bg-gray-600 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Supplier</p>
-                          <p className="text-base font-semibold text-gray-900 dark:text-white">
-                            {extractedData.supplier}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {extractedData.usage && (
-                        <div className="bg-white dark:bg-gray-600 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Monthly Usage</p>
-                          <p className="text-base font-semibold text-gray-900 dark:text-white">
-                            {extractedData.usage} kWh
-                          </p>
-                        </div>
-                      )}
-
-                      {extractedData.tariff && (
-                        <div className="bg-white dark:bg-gray-600 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tariff</p>
-                          <p className="text-base font-semibold text-gray-900 dark:text-white">
-                            {extractedData.tariff}
-                          </p>
-                        </div>
-                      )}
-
-                      {extractedData.cost && (
-                        <div className="bg-white dark:bg-gray-600 rounded-lg p-3">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Monthly Cost</p>
-                          <p className="text-base font-semibold text-gray-900 dark:text-white">
-                            £{extractedData.cost.toFixed(2)}
-                          </p>
-                        </div>
-                      )}
+          {/* Confirmation UI for extracted data (photo upload) */}
+          {showConfirmation && (
+            <MessageCard delay={600}>
+              <div className="space-y-4">
+                <div className="text-center font-semibold text-lg">Confirm Extracted Details</div>
+                {/* Editable fields for extracted data */}
+                <div className="space-y-2">
+                  {extractedData?.tariff !== undefined && (
+                    <div>
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Tariff</label>
+                      <Input
+                        type="text"
+                        value={editedData.tariff || ''}
+                        onChange={(e) => handleEditData('tariff', e.target.value)}
+                        className="h-12"
+                      />
                     </div>
-
-                    {/* Action buttons */}
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        className="w-full h-12"
-                        onClick={handleConfirmExtraction}
-                      >
-                        ✓ Looks good!
-                      </Button>
-                      <div className="flex gap-2">
-                        <Button
-                          className="flex-1 h-10"
-                          variant="outline"
-                          onClick={() => setEditMode(true)}
-                        >
-                          ✏️ Edit
-                        </Button>
-                        <Button
-                          className="flex-1 h-10"
-                          variant="outline"
-                          onClick={handleReupload}
-                        >
-                          📸 Re-upload
-                        </Button>
-                      </div>
+                  )}
+                  {extractedData?.cost !== undefined && (
+                    <div>
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Monthly Cost (£)</label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={editedData.cost || ''}
+                        onChange={(e) => handleEditData('cost', e.target.value)}
+                        className="h-12"
+                      />
                     </div>
-                  </>
-                ) : (
-                  <>
-                    {/* Edit mode */}
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 text-center">
-                        Edit the details below
-                      </p>
-                      
-                      {extractedData.supplier !== undefined && (
-                        <div>
-                          <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Supplier</label>
-                          <Input
-                            type="text"
-                            value={editedData.supplier || ''}
-                            onChange={(e) => handleEditData('supplier', e.target.value)}
-                            className="h-12"
-                          />
-                        </div>
-                      )}
-                      
-                      {extractedData.usage !== undefined && (
-                        <div>
-                          <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Monthly Usage (kWh)</label>
-                          <Input
-                            type="number"
-                            value={editedData.usage || ''}
-                            onChange={(e) => handleEditData('usage', e.target.value)}
-                            className="h-12"
-                          />
-                        </div>
-                      )}
-
-                      {extractedData.tariff !== undefined && (
-                        <div>
-                          <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Tariff</label>
-                          <Input
-                            type="text"
-                            value={editedData.tariff || ''}
-                            onChange={(e) => handleEditData('tariff', e.target.value)}
-                            className="h-12"
-                          />
-                        </div>
-                      )}
-
-                      {extractedData.cost !== undefined && (
-                        <div>
-                          <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Monthly Cost (£)</label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={editedData.cost || ''}
-                            onChange={(e) => handleEditData('cost', e.target.value)}
-                            className="h-12"
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Save/Cancel buttons */}
-                    <div className="flex gap-2">
-                      <Button
-                        className="flex-1 h-12"
-                        onClick={handleConfirmExtraction}
-                      >
-                        ✓ Save Changes
-                      </Button>
-                      <Button
-                        className="flex-1 h-10"
-                        variant="outline"
-                        onClick={() => {
-                          setEditMode(false);
-                          setEditedData(extractedData);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </>
-                )}
+                  )}
+                </div>
+                {/* Save/Cancel buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1 h-12"
+                    onClick={handleConfirmExtraction}
+                  >
+                    ✓ Save Changes
+                  </Button>
+                  <Button
+                    className="flex-1 h-10"
+                    variant="outline"
+                    onClick={() => {
+                      setEditMode(false);
+                      setEditedData(extractedData);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </MessageCard>
           )}
@@ -555,7 +462,6 @@ export default function ConversationalOnboardingPage() {
           {currentQuestion && !showConfirmation && (
             <MessageCard delay={1200}>
               <div className={`space-y-4 transition-opacity duration-300 ${showTyping ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                {/* Postcode input */}
                 {/* Navigation buttons */}
                 <div className="flex justify-between mt-6">
                   <Button
@@ -579,6 +485,8 @@ export default function ConversationalOnboardingPage() {
                     Next →
                   </Button>
                 </div>
+
+                {/* Postcode input */}
                 {currentQuestion.type === 'postcode' && (
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
                     <div className="space-y-2">
@@ -589,23 +497,14 @@ export default function ConversationalOnboardingPage() {
                         type="text"
                         placeholder="SW1A 1AA"
                         value={inputValue}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                          const value = e.target.value.toUpperCase();
-                          // Auto-format: add space before last 3 characters
-                          if (value.length > 3 && !value.includes(' ')) {
-                            const formatted = value.slice(0, -3) + ' ' + value.slice(-3);
-                            setInputValue(formatted);
-                          } else {
-                            setInputValue(value);
-                          }
-                        }}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
                         onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
                           if (e.key === 'Enter' && inputValue.length >= 5) {
                             handleAnswer(inputValue, inputValue);
                           }
                         }}
                         className="text-center text-lg h-14 border-2"
-                        maxLength={8}
+                        maxLength={16}
                         autoFocus
                       />
                       <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
@@ -625,7 +524,7 @@ export default function ConversationalOnboardingPage() {
                 {/* Options with cards */}
                 {currentQuestion.options && (
                   <SelectableGrid columns={currentQuestion.options.length > 4 ? 2 : 1}>
-                    {currentQuestion.options.map((option) => (
+                    {currentQuestion.options.map((option: any) => (
                       <SelectableCard
                         key={option.value}
                         value={option.value}
@@ -637,53 +536,9 @@ export default function ConversationalOnboardingPage() {
                           setSelectedValue(option.value);
                           setTimeout(() => handleAnswer(option.value, option.label), 300);
                         }}
-                        size="lg"
                       />
                     ))}
                   </SelectableGrid>
-                )}
-
-                {/* Occupants selector */}
-                {currentQuestion.type === 'occupants' && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                    <div className="flex items-center justify-center gap-6 sm:gap-8">
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-full text-2xl font-bold"
-                        onClick={() => setInputValue(Math.max(1, parseInt(inputValue || '1') - 1).toString())}
-                        aria-label="Decrease occupants"
-                      >
-                        −
-                      </Button>
-                      
-                      <div className="min-w-[120px] text-center">
-                        <div className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                          {inputValue || '2'}
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                          {parseInt(inputValue || '2') === 1 ? 'person' : 'people'}
-                        </p>
-                      </div>
-                      
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-full text-2xl font-bold"
-                        onClick={() => setInputValue(Math.min(10, parseInt(inputValue || '2') + 1).toString())}
-                        aria-label="Increase occupants"
-                      >
-                        +
-                      </Button>
-                    </div>
-
-                    <Button
-                      className="w-full mt-6 h-12"
-                      onClick={() => handleAnswer(parseInt(inputValue || '2'), `${inputValue || '2'} people`)}
-                    >
-                      Confirm <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
                 )}
 
                 {/* Supplier selection */}
@@ -801,42 +656,17 @@ export default function ConversationalOnboardingPage() {
                           Processing...
                         </>
                       ) : (
-                        <>
-                          📸 Take Photo or Upload PDF
-                        </>
+                        <>Take Photo</>
                       )}
                     </Button>
-                    <Button 
-                      className="w-full h-14" 
-                      variant="outline" 
-                      size="lg"
+                    <Button
+                      className="w-full h-12 mt-2"
+                      variant="outline"
                       onClick={() => galleryInputRef.current?.click()}
                       disabled={isUploading}
                     >
-                      📁 Upload from Gallery or PDF
+                      Upload from Gallery / PDF
                     </Button>
-
-                    {/* Clear skip option */}
-                    <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                      <Button
-                        className="w-full h-12"
-                        variant="ghost"
-                        onClick={() => {
-                          handleSkipPhoto();
-                          setShowSkipOption(false);
-                          manager.skipQuestion();
-                          setTimeout(() => loadNextQuestion(), 600);
-                        }}
-                        disabled={isUploading}
-                      >
-                        Skip - I'll add this later
-                      </Button>
-                    </div>
-
-                    {/* Help text */}
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                      We'll extract your supplier, tariff, and usage details automatically
-                    </p>
                   </div>
                 )}
               </div>

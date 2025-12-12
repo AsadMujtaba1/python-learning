@@ -1,0 +1,17 @@
+[
+  { "make": "Tesla", "model": "Model 3", "batteryKwh": 57.5, "efficiencyMpkwh": 4.0 },
+  { "make": "Tesla", "model": "Model Y", "batteryKwh": 75, "efficiencyMpkwh": 3.7 },
+  { "make": "Nissan", "model": "Leaf", "batteryKwh": 39, "efficiencyMpkwh": 3.5 },
+  { "make": "Kia", "model": "Niro EV", "batteryKwh": 64.8, "efficiencyMpkwh": 3.9 },
+  { "make": "Hyundai", "model": "Kona Electric", "batteryKwh": 64, "efficiencyMpkwh": 4.1 },
+  { "make": "Volkswagen", "model": "ID.3", "batteryKwh": 58, "efficiencyMpkwh": 3.8 },
+  { "make": "Volkswagen", "model": "ID.4", "batteryKwh": 77, "efficiencyMpkwh": 3.5 },
+  { "make": "MG", "model": "MG4 EV", "batteryKwh": 64, "efficiencyMpkwh": 3.7 },
+  { "make": "Audi", "model": "Q4 e-tron", "batteryKwh": 76.6, "efficiencyMpkwh": 3.2 },
+  { "make": "BMW", "model": "i4", "batteryKwh": 83.9, "efficiencyMpkwh": 3.6 },
+  { "make": "Polestar", "model": "2", "batteryKwh": 78, "efficiencyMpkwh": 3.4 },
+  { "make": "Renault", "model": "ZOE", "batteryKwh": 52, "efficiencyMpkwh": 4.0 },
+  { "make": "Peugeot", "model": "e-208", "batteryKwh": 50, "efficiencyMpkwh": 3.9 },
+  { "make": "Vauxhall", "model": "Corsa-e", "batteryKwh": 50, "efficiencyMpkwh": 3.8 },
+  { "make": "Skoda", "model": "Enyaq iV", "batteryKwh": 77, "efficiencyMpkwh": 3.5 }
+]

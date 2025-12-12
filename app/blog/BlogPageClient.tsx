@@ -79,9 +79,70 @@ export default function BlogPageClient({ initialPosts }: BlogPageClientProps) {
 
         {/* Blog Posts Grid */}
         {filteredPosts && filteredPosts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
             {filteredPosts.map((post) => (
-              <BlogPostCard key={post.id} post={post} />
+              <Link 
+                key={post.id} 
+                href={`/blog/${post.slug}`}
+                className="group"
+              >
+                <article className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden h-full flex flex-col transform hover:scale-105">
+                  {/* Cover Image */}
+                  {post.coverImage ? (
+                    <div className="h-48 overflow-hidden">
+                      <img 
+                        src={post.coverImage} 
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-48 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 flex items-center justify-center">
+                      <span className="text-6xl">📝</span>
+                    </div>
+                  )}
+
+                  {/* Content */}
+                  <div className="p-6 flex-1 flex flex-col">
+                    {/* Category Badge */}
+                    <div className="mb-3">
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${(() => {
+                        const colors = {
+                          energy: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+                          'home-upgrades': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                          products: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+                          guides: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+                          news: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+                        };
+                        return colors[post.category] || colors.energy;
+                      })()}`}>
+                        {post.category.replace('-', ' ')}
+                      </span>
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                      {post.title}
+                    </h3>
+
+                    {/* Excerpt */}
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-3 flex-1">
+                      {post.excerpt}
+                    </p>
+
+                    {/* Meta */}
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <span className="flex items-center gap-1">
+                        <span>⏱️</span>
+                        <span>{post.readTime || 5} min read</span>
+                      </span>
+                      <span className="text-blue-600 dark:text-blue-400 font-medium group-hover:underline">
+                        Read more →
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              </Link>
             ))}
           </div>
         ) : (

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import Modal from './Modal';
 import ConversationalOnboardingPage from '@/app/onboarding-conversational/page';
 
-export default function OnboardingChatPopup() {
-  const [open, setOpen] = useState(false);
+export default function OnboardingChatPopup({ open: controlledOpen, setOpen: setControlledOpen }: { open?: boolean, setOpen?: (open: boolean) => void } = {}) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : uncontrolledOpen;
+  const setOpen = setControlledOpen !== undefined ? setControlledOpen : setUncontrolledOpen;
 
   // Only show on desktop (hidden on mobile)
   return (
@@ -17,22 +19,18 @@ export default function OnboardingChatPopup() {
       >
         💬
       </button>
-      {/* Popup modal */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-end md:justify-end pointer-events-none">
-          <div className="w-full md:w-[420px] max-h-[90vh] bg-white dark:bg-gray-900 rounded-t-2xl md:rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col pointer-events-auto animate-in fade-in duration-300 mr-0 md:mr-8 mb-0 md:mb-8">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-t-2xl md:rounded-t-2xl">
-              <span className="font-semibold text-blue-700 dark:text-blue-300">Onboarding Assistant</span>
-              <button onClick={() => setOpen(false)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white p-1 rounded-full">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <ConversationalOnboardingPage isPopup onComplete={() => setOpen(false)} />
-            </div>
-          </div>
+      <Modal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        title="Onboarding Assistant"
+        size="md"
+        showCloseButton
+        className="md:w-[420px] max-h-[90vh] p-0"
+      >
+        <div className="flex-1 overflow-y-auto">
+          <ConversationalOnboardingPage isPopup onComplete={() => setOpen(false)} />
         </div>
-      )}
+      </Modal>
     </>
   );
 }

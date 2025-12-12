@@ -1,4 +1,6 @@
 import Link from "next/link";
+import OnboardingChatPopup from '@/components/OnboardingChatPopup';
+import React from 'react';
 
 export default function ToolsPage() {
   // List of tools (expandable in future)
@@ -15,8 +17,39 @@ export default function ToolsPage() {
     },
   ];
 
+  // Show onboarding link if onboarding not complete (localStorage check, client-side only)
+  const [needsOnboarding, setNeedsOnboarding] = React.useState(false);
+  const [onboardingOpen, setOnboardingOpen] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userData = localStorage.getItem('userHomeData');
+      if (!userData) setNeedsOnboarding(true);
+      else {
+        try {
+          const parsed = JSON.parse(userData);
+          if (parsed.profileCompleteness !== undefined && parsed.profileCompleteness < 100) setNeedsOnboarding(true);
+        } catch {}
+      }
+    }
+  }, []);
+
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
+      {needsOnboarding && (
+        <div className="bg-blue-100 border border-blue-300 text-blue-900 px-4 py-3 flex items-center justify-between mb-6 rounded">
+          <div>
+            <span className="font-semibold">New here?</span>
+            <span className="ml-2">Complete onboarding for personalized tool recommendations.</span>
+          </div>
+          <button
+            className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors"
+            onClick={() => setOnboardingOpen(true)}
+          >
+            Start Onboarding
+          </button>
+        </div>
+      )}
+      <OnboardingChatPopup open={onboardingOpen} setOpen={setOnboardingOpen} />
       <div className="flex items-center justify-between mb-6">
         <a href="/" className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">← Home</a>
         <h1 className="text-3xl font-bold">Tools</h1>

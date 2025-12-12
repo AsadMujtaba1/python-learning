@@ -108,18 +108,6 @@ def create_proper_blog_file(blog_num):
     # Extract metadata
     metadata = extract_blog_metadata(text)
     
-    # Remove any existing "Blog X –" prefixes from the content
-    text = re.sub(r'^Blog\s+\d+\s*[–-]\s*[^\n]+\n+', '', text, flags=re.MULTILINE)
-    
-    # Remove the duplicate title if it appears twice
-    lines = text.split('\n')
-    if len(lines) > 1 and lines[0].strip() == lines[1].strip():
-        text = '\n'.join(lines[1:])
-    
-    # Create frontmatter
-    tags_str = ', '.join([f'"{tag}"' for tag in metadata['tags']])
-    
-    frontmatter = f'''---
 title: "{metadata['title']}"
 date: "2025-01-{blog_num:02d}"
 excerpt: "{metadata['excerpt']}"
@@ -129,23 +117,91 @@ author: "Cost Saver Team"
 readTime: "{metadata['readTime']}"
 category: "{metadata['category']}"
 featured: {str(blog_num <= 3).lower()}
----'''
-    
+    # Remove any existing "Blog X –" prefixes from the content
+    text = re.sub(r'^Blog\s+\d+\s*[–-]\s*[^\n]+\n+', '', text, flags=re.MULTILINE)
+
+    # Remove the duplicate title if it appears twice
+    lines = text.split('\n')
+    if len(lines) > 1 and lines[0].strip() == lines[1].strip():
+        text = '\n'.join(lines[1:])
+
+    # Enforce heading levels: only one H1, use H2 for main sections, H3 for subsections
+    # Convert all headings to proper markdown and ensure spacing
+    def fix_headings(md):
+        lines = md.split('\n')
+        new_lines = []
+        h1_found = False
+        for line in lines:
+            # Fix heading spacing
+            if re.match(r'^#+ ', line):
+                if new_lines and new_lines[-1].strip() != '':
+                    new_lines.append('')
+            # Only allow one H1
+            if re.match(r'^# ', line):
+                if h1_found:
+                    line = re.sub(r'^# ', '## ', line)
+                else:
+                    h1_found = True
+            # No skipped heading levels (convert ### to ## if no ## before)
+            if re.match(r'^### ', line):
+                if not any(l.startswith('## ') for l in new_lines[-5:]):
+                    line = re.sub(r'^### ', '## ', line)
+            new_lines.append(line)
+            # Add blank line after heading
+            if re.match(r'^#+ ', line):
+                new_lines.append('')
+        return '\n'.join(new_lines)
+
+    # Enforce list style: hyphens for unordered, numbers for ordered
+    def fix_lists(md):
+        md = re.sub(r'^[*•]\s+', '- ', md, flags=re.MULTILINE)
+        md = re.sub(r'^(\d+)\. ', r'\1. ', md, flags=re.MULTILINE)
+        return md
+
+    # Enforce table formatting: header row, standard markdown
+    def fix_tables(md):
+        # This is a placeholder for more advanced table checks
+        return md
+
+    # Remove extra blank lines (no more than one consecutive)
+    def fix_blank_lines(md):
+        return re.sub(r'\n{3,}', '\n\n', md)
+
+    # Enforce blockquote and code block spacing
+    def fix_blocks(md):
+        # Ensure blank line before/after blockquotes and code blocks
+        md = re.sub(r'([^\n])\n(> )', r'\1\n\n\2', md)
+        md = re.sub(r'(```[a-zA-Z]*\n)', r'\n\1', md)
+        md = re.sub(r'(\n```)', r'\1\n', md)
+        return md
+
+    # Apply all fixes
+    text = fix_headings(text)
+    text = fix_lists(text)
+    text = fix_tables(text)
+    text = fix_blank_lines(text)
+    text = fix_blocks(text)
+
+    # Create frontmatter
+    tags_str = ', '.join([f'"{tag}"' for tag in metadata['tags']])
+
+    frontmatter = f'''---\ntitle: "{metadata['title']}"\ndate: "2025-01-{blog_num:02d}"\nexcerpt: "{metadata['excerpt']}"\ntags: [{tags_str}]\nslug: "{metadata['slug']}"\nauthor: "Cost Saver Team"\nreadTime: "{metadata['readTime']}"\ncategory: "{metadata['category']}"\nfeatured: {str(blog_num <= 3).lower()}\n---'''
+
     # Combine frontmatter and content
     final_content = f"{frontmatter}\n\n{text.strip()}"
-    
+
     # Create filename
     filename = f"2025-01-{blog_num:02d}-{metadata['slug']}.md"
     output_path = f"blog/{filename}"
-    
+
     # Write file
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(final_content)
-    
+
     print(f"✓ Created: {filename}")
     print(f"  Title: {metadata['title']}")
     print(f"  Category: {metadata['category']}")
-    
+
     return filename
 
 def main():

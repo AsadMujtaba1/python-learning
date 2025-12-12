@@ -1,3 +1,15 @@
+// DEPRECATED: This onboarding route is deprecated in favor of /onboarding-conversational.
+// Redirecting to canonical onboarding.
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function OnboardingV2Page() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/onboarding-conversational');
+  }, [router]);
+  return null;
 /**
  * Enhanced Onboarding Page with Firebase Integration
  * Saves data to both localStorage and Firestore

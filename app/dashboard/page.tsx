@@ -6,6 +6,7 @@ import { UserHomeData, EnergyCostData, ForecastData, SavingTip } from '@/types';
 import { calculateEnergyCost, generateForecast, calculateWeatherImpact } from '@/utils/energyCalculations';
 import { generateSavingTips, getCurrentWeather } from '@/utils/savingTips';
 import OnboardingGate from '@/components/OnboardingGate';
+import OnboardingChatPopup from '@/components/OnboardingChatPopup';
 
 function DashboardPageContent() {
   const router = useRouter();
@@ -55,8 +56,28 @@ function DashboardPageContent() {
 
   const weatherImpact = calculateWeatherImpact(weather.temperature);
 
+  // Check if onboarding is incomplete (profile completeness < 100 or missing userData)
+  const needsOnboarding = !userData || (userData.profileCompleteness !== undefined && userData.profileCompleteness < 100);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Onboarding Link Banner */}
+      {needsOnboarding && (
+        <div className="bg-blue-100 border border-blue-300 text-blue-900 px-4 py-3 flex items-center justify-between">
+          <div>
+            <span className="font-semibold">Haven't completed onboarding?</span>
+            <span className="ml-2">Finish onboarding to unlock all features and get personalized savings.</span>
+          </div>
+          <button
+            className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors"
+            onClick={() => setOnboardingOpen(true)}
+          >
+            Complete Onboarding
+          </button>
+        </div>
+      )}
+      <OnboardingChatPopup open={onboardingOpen} setOpen={setOnboardingOpen} />
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -68,7 +89,7 @@ function DashboardPageContent() {
               </p>
             </div>
             <button
-              onClick={() => router.push('/onboarding')}
+              onClick={() => setOnboardingOpen(true)}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               Update Details

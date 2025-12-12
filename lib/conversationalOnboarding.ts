@@ -68,6 +68,16 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
     message: "Nice! That gives us a good baseline.",
     secondaryMessage: "How many people live in your home?",
     skippable: true,
+    options: [
+      { value: '1', label: '1', description: 'Just me', icon: '🧑' },
+      { value: '2', label: '2', description: 'Two people', icon: '👫' },
+      { value: '3', label: '3', description: 'Three people', icon: '👨‍👩‍👦' },
+      { value: '4', label: '4', description: 'Four people', icon: '👨‍👩‍👧‍👦' },
+      { value: '5', label: '5', description: 'Five people', icon: '👨‍👩‍👧‍👦+' },
+      { value: '6', label: '6', description: 'Six people', icon: '👨‍👩‍👧‍👦++' },
+      { value: '7+', label: '7+', description: 'Seven or more', icon: '👨‍👩‍👧‍👦…' },
+      { value: 'prefer_not_to_say', label: 'Prefer not to say', description: '', icon: '❓' },
+    ],
     extractableFrom: [],
   },
   {

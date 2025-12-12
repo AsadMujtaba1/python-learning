@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import OnboardingChatPopup from '@/components/OnboardingChatPopup';
 import ConversationalProfileEditor from '@/components/account/ConversationalProfileEditor';
 import { UserAccount, UserProfile } from '@/lib/types/accountTypes';
 import { getFieldConfig } from '@/lib/editableFields';
@@ -261,8 +262,40 @@ export default function AccountPage() {
     }
   }
 
+  // Show onboarding link if onboarding not complete (localStorage check, client-side only)
+  const [needsOnboarding, setNeedsOnboarding] = React.useState(false);
+  const [onboardingOpen, setOnboardingOpen] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userData = localStorage.getItem('userHomeData');
+      if (!userData) setNeedsOnboarding(true);
+      else {
+        try {
+          const parsed = JSON.parse(userData);
+          if (parsed.profileCompleteness !== undefined && parsed.profileCompleteness < 100) setNeedsOnboarding(true);
+        } catch {}
+      }
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      {/* Onboarding Link Banner */}
+      {needsOnboarding && (
+        <div className="bg-blue-100 border border-blue-300 text-blue-900 px-4 py-3 flex items-center justify-between mb-6 rounded">
+          <div>
+            <span className="font-semibold">Complete your profile</span>
+            <span className="ml-2">Finish onboarding to unlock all features and get personalized recommendations.</span>
+          </div>
+          <button
+            className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors"
+            onClick={() => setOnboardingOpen(true)}
+          >
+            Complete Onboarding
+          </button>
+        </div>
+      )}
+      <OnboardingChatPopup open={onboardingOpen} setOpen={setOnboardingOpen} />
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">

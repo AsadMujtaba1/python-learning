@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import OnboardingChatPopup from '@/components/OnboardingChatPopup';
 import Link from 'next/link';
 import { BlogPost, BLOG_CATEGORIES } from '@/lib/blogService';
 import Badge from '@/components/Badge';
@@ -19,8 +20,40 @@ export default function BlogPageClient({ initialPosts }: BlogPageClientProps) {
     ? initialPosts 
     : initialPosts.filter(post => post.category === selectedCategory);
 
+  // Show onboarding link if onboarding not complete (localStorage check, client-side only)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userData = localStorage.getItem('userHomeData');
+      if (!userData) setNeedsOnboarding(true);
+      else {
+        try {
+          const parsed = JSON.parse(userData);
+          if (parsed.profileCompleteness !== undefined && parsed.profileCompleteness < 100) setNeedsOnboarding(true);
+        } catch {}
+      }
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Onboarding Link Banner */}
+      {needsOnboarding && (
+        <div className="bg-blue-100 border border-blue-300 text-blue-900 px-4 py-3 flex items-center justify-between">
+          <div>
+            <span className="font-semibold">New to Cost Saver?</span>
+            <span className="ml-2">Complete onboarding for personalized blog recommendations.</span>
+          </div>
+          <button
+            className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium transition-colors"
+            onClick={() => setOnboardingOpen(true)}
+          >
+            Start Onboarding
+          </button>
+        </div>
+      )}
+      <OnboardingChatPopup open={onboardingOpen} setOpen={setOnboardingOpen} />
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">

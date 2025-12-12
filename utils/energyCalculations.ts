@@ -1,4 +1,5 @@
 import { UserHomeData, EnergyCostData, ForecastData } from '@/types';
+import type { UserSavingsProfile } from '@/types/UserSavingsProfile';
 
 // Base energy costs (£ per day) - UK averages 2025
 const BASE_COSTS = {
@@ -14,18 +15,26 @@ const OCCUPANT_MULTIPLIER = 0.15; // 15% increase per additional person
 /**
  * Calculate daily energy costs based on user home data
  */
-export function calculateEnergyCost(homeData: UserHomeData): EnergyCostData {
-  const heatingTypeKey = homeData.heatingType === 'heat-pump' ? 'heatPump' : homeData.heatingType;
-  const baseCost = BASE_COSTS[homeData.homeType][heatingTypeKey as keyof typeof BASE_COSTS.flat];
-  
+export function calculateEnergyCost(homeData: UserHomeData | UserSavingsProfile): EnergyCostData {
+  // Accepts either legacy UserHomeData or canonical UserSavingsProfile
+  let homeType, heatingType, occupants;
+  if ((homeData as any).version === 1 && (homeData as any).household) {
+    homeType = (homeData as any).household.homeType;
+    heatingType = (homeData as any).household.heatingType;
+    occupants = (homeData as any).household.occupants;
+  } else {
+    homeType = (homeData as any).homeType;
+    heatingType = (homeData as any).heatingType;
+    occupants = (homeData as any).occupants;
+  }
+  const heatingTypeKey = heatingType === 'heat-pump' ? 'heatPump' : heatingType;
+  const baseCost = BASE_COSTS[homeType][heatingTypeKey as keyof typeof BASE_COSTS.flat];
   // Adjust for occupants (1 person = base, each additional adds 15%)
-  const occupantFactor = 1 + ((homeData.occupants - 1) * OCCUPANT_MULTIPLIER);
+  const occupantFactor = 1 + ((occupants - 1) * OCCUPANT_MULTIPLIER);
   const dailyCost = baseCost * occupantFactor;
-  
   // Calculate breakdown
-  const heatingPortion = homeData.heatingType === 'electricity' ? 0.35 : 0.55;
-  const electricityPortion = homeData.heatingType === 'gas' ? 0.30 : 0.50;
-  
+  const heatingPortion = heatingType === 'electricity' ? 0.35 : 0.55;
+  const electricityPortion = heatingType === 'gas' ? 0.30 : 0.50;
   return {
     dailyCost: Number(dailyCost.toFixed(2)),
     monthlyCost: Number((dailyCost * 30).toFixed(2)),
@@ -41,27 +50,23 @@ export function calculateEnergyCost(homeData: UserHomeData): EnergyCostData {
 /**
  * Generate 7-day heating cost forecast based on temperature
  */
-export function generateForecast(baseData: UserHomeData, currentTemp: number = 12): ForecastData[] {
+export function generateForecast(baseData: UserHomeData | UserSavingsProfile, currentTemp: number = 12): ForecastData[] {
   const baseCost = calculateEnergyCost(baseData).dailyCost;
   const forecast: ForecastData[] = [];
-  
   for (let i = 0; i < 7; i++) {
     // Simulate temperature variation
     const temp = currentTemp + (Math.random() * 4 - 2);
     // Cost increases as temperature drops
     const tempFactor = temp < 15 ? 1 + ((15 - temp) * 0.08) : 1;
     const estimatedCost = baseCost * tempFactor;
-    
     const date = new Date();
     date.setDate(date.getDate() + i);
-    
     forecast.push({
       date: date.toISOString().split('T')[0],
       estimatedCost: Number(estimatedCost.toFixed(2)),
       temperature: Number(temp.toFixed(1)),
     });
   }
-  
   return forecast;
 }
 

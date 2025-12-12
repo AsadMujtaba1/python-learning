@@ -1,3 +1,11 @@
+// Feature flag for future categories
+const FEATURE_BROADBAND = false;
+const FEATURE_INSURANCE = false;
+const FEATURE_FLIGHTS = false;
+// Add to UserSavingsProfile type import if not present
+// import type { UserSavingsProfile } from '@/types/UserSavingsProfile';
+// Add interests to UserSavingsProfile type if not present
+// interface UserSavingsProfileV1 { ... interests?: string[]; ... }
 'use client';
 
 /**
@@ -8,6 +16,9 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { updateUserProfile } from '@/lib/userProfile';
+import type { UserSavingsProfile } from '@/types/UserSavingsProfile';
 import { useRouter } from 'next/navigation';
 import { Sparkles, ArrowRight, SkipForward, Home } from 'lucide-react';
 import { ChatBubble, MessageCard } from '@/components/conversational/ChatBubble';
@@ -29,6 +40,9 @@ const POPULAR_SUPPLIERS = [
   { value: 'scottish-power', label: 'Scottish Power', icon: '⚡' },
   { value: 'ovo', label: 'OVO Energy', icon: '🌟' },
 ];
+
+// If rendered as a route, show as a modal overlay for consistency
+import Modal from '@/components/Modal';
 
 export default function ConversationalOnboardingPage({ isPopup = false, onComplete }: { isPopup?: boolean; onComplete?: () => void } = {}) {
   const router = useRouter();
@@ -138,9 +152,6 @@ export default function ConversationalOnboardingPage({ isPopup = false, onComple
         return;
       }
     }
-
-    manager.answerQuestion(currentQuestion.id, answer);
-
     // Add user message
     setMessages(prev => [
       ...prev,
@@ -188,10 +199,86 @@ export default function ConversationalOnboardingPage({ isPopup = false, onComple
     localStorage.setItem('userHomeData', JSON.stringify(manager.getAnswers()));
   }
 
+  // Auth step state
+  const [showAuthChoice, setShowAuthChoice] = useState(false);
+  const [authChoiceMade, setAuthChoiceMade] = useState(false);
+
   async function handleComplete() {
-    // Save final data
+    // Show auth choice step before finalizing onboarding
+    setShowAuthChoice(true);
+  }
+
+  // Called after user makes auth choice
+  const { user } = useAuth();
+  async function finalizeOnboarding() {
     const answers = manager.getAnswers();
-    localStorage.setItem('userHomeData', JSON.stringify(answers));
+    // Canonical UserSavingsProfile v1
+    const userSavingsProfile: UserSavingsProfile = {
+      version: 1,
+      household: {
+        occupants: answers.occupants || 1,
+        homeType: answers.homeType || '',
+        postcode: answers.postcode,
+        region: answers.region,
+      },
+      energy: {
+        supplier: answers.supplier,
+        tariff: answers.tariff,
+        standingCharge: answers.electricityStandingCharge || answers.gasStandingCharge,
+        unitRate: answers.electricityUnitRate || answers.gasUnitRate,
+        paymentType: answers.paymentType,
+        usage: answers.usage,
+        cost: answers.cost,
+      },
+      ev: answers.hasEV !== undefined ? {
+        hasEV: !!answers.hasEV,
+        chargingPreference: answers.evChargingPreference,
+      } : undefined,
+      solarInterest: !!answers.solarInterest,
+      heatPumpInterest: !!answers.heatPumpInterest,
+      interests: answers.interests || [],
+    };
+      // --- Future-facing step: Broadband/Insurance/Flights ---
+      // Only show if any feature flag is true
+      const showFutureCategories = FEATURE_BROADBAND || FEATURE_INSURANCE || FEATURE_FLIGHTS;
+
+      // Add to onboarding steps array near the end (before final review/confirm)
+      // Example step definition:
+      // {
+      //   id: 'interests',
+      //   type: 'multi-select',
+      //   prompt: 'Want to also optimise Broadband or Insurance when it’s ready?',
+      //   options: [
+      //     ...(FEATURE_BROADBAND ? [{ value: 'broadband', label: 'Broadband' }] : []),
+      //     ...(FEATURE_INSURANCE ? [{ value: 'insurance', label: 'Insurance' }] : []),
+      //     ...(FEATURE_FLIGHTS ? [{ value: 'flights', label: 'Flights' }] : []),
+      //   ],
+      //   hidden: !showFutureCategories,
+      // },
+
+      // In the onboarding step manager/config, insert this step with hidden: true for now
+      // When enabling, just set the feature flag(s) to true and the step will appear
+    localStorage.setItem('userSavingsProfile', JSON.stringify(userSavingsProfile));
+    // For backward compatibility, also update userHomeData
+    localStorage.setItem('userHomeData', JSON.stringify(userSavingsProfile));
+    // If authenticated, sync to server
+    if (user && user.uid) {
+      try {
+        // Map UserSavingsProfile to a compatible UserProfile update
+        await updateUserProfile(user.uid, {
+          postcode: userSavingsProfile.household.postcode,
+          homeType: userSavingsProfile.household.homeType,
+          occupants: userSavingsProfile.household.occupants,
+          onboardingCompleted: true,
+          profileCompleteness: 100,
+          lastCompleted: new Date().toISOString(),
+          // Optionally store the full canonical profile as JSON for future extensibility
+          savingsProfileV1: userSavingsProfile,
+        });
+      } catch (e) {
+        // Fail silently, user still proceeds
+      }
+    }
     setMessages(prev => [
       ...prev,
       {
@@ -208,7 +295,7 @@ export default function ConversationalOnboardingPage({ isPopup = false, onComple
     setTimeout(() => {
       if (onComplete) {
         onComplete();
-        setTimeout(() => router.push('/dashboard-new/'), 500); // Give popup time to close
+        setTimeout(() => router.push('/dashboard-new/'), 500);
       } else {
         const returnUrl = sessionStorage.getItem('returnAfterOnboarding');
         if (returnUrl) {
@@ -221,68 +308,76 @@ export default function ConversationalOnboardingPage({ isPopup = false, onComple
     }, 2500);
   }
 
-  function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
-
+    const file = files[0];
     setIsUploading(true);
-
-    // Add user message
+    setShowConfirmation(false);
+    setExtractedData(null);
+    setEditedData({});
     setMessages(prev => [
       ...prev,
       {
         type: 'user',
-        message: `📸 Uploaded ${files[0].name}`,
+        message: `📸 Uploaded ${file.name}`,
         delay: 0,
       },
     ]);
 
-    // Simulate processing delay
-    setTimeout(() => {
-      // TODO: Replace with actual OCR/extraction API call
-      // Improved extraction: if PDF, show message to user and allow skip/next
-      const file = files[0];
-      let mockExtracted;
-      if (file && file.type === 'application/pdf') {
-        setMessages(prev => {
-          // Only add the PDF warning if not already present
-          if (!prev.some(m => m.type === 'assistant' && m.message === "PDF extraction is not yet supported. You can skip this step or try uploading a photo instead.")) {
-            return [
-              ...prev,
-              {
-                type: 'assistant',
-                message: "PDF extraction is not yet supported. You can skip this step or try uploading a photo instead.",
-                delay: 0,
-              },
-            ];
-          }
-          return prev;
-        });
-        setIsUploading(false);
-        setShowSkipOption(true); // Always show skip
-        setShowConfirmation(false); // Hide confirmation UI if it was open
-        return;
-      } else {
-        mockExtracted = {
-          supplier: 'Octopus Energy',
-          usage: 2500,
-          tariff: 'Flexible Octopus',
-          cost: 215.50,
-        };
+    try {
+      // 1. Upload file to server
+      const formData = new FormData();
+      formData.append('file', file);
+      const uploadRes = await fetch('/api/bills/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadData.success || !uploadData.fileUrl) {
         setMessages(prev => [
           ...prev,
-          {
-            type: 'assistant',
-            message: "Perfect! I found these details from your photo:",
-            delay: 0,
-          }
+          { type: 'assistant', message: uploadData.error || 'Upload failed. Please try again.', delay: 0 },
         ]);
+        setIsUploading(false);
+        setShowSkipOption(true);
+        return;
       }
-      setExtractedData(mockExtracted);
-      setEditedData(mockExtracted);
-      setIsUploading(false);
+
+      // 2. Extract bill data (PDF or image)
+      const extractRes = await fetch('/api/bills/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileUrl: uploadData.fileUrl, fileName: uploadData.fileName }),
+      });
+      const extractData = await extractRes.json();
+      if (extractData.error) {
+        setMessages(prev => [
+          ...prev,
+          { type: 'assistant', message: extractData.error, delay: 0 },
+        ]);
+        setIsUploading(false);
+        setShowSkipOption(true);
+        return;
+      }
+
+      // 3. Show extracted fields for review & edit
+      setExtractedData(extractData);
+      setEditedData(extractData);
       setShowConfirmation(true);
-    }, 2000);
+      setIsUploading(false);
+      setMessages(prev => [
+        ...prev,
+        { type: 'assistant', message: 'Perfect! I found these details from your document. Please review and confirm:', delay: 0 },
+      ]);
+    } catch (err: any) {
+      setMessages(prev => [
+        ...prev,
+        { type: 'assistant', message: 'Extraction failed. Please try again or use a different file.', delay: 0 },
+      ]);
+      setIsUploading(false);
+      setShowSkipOption(true);
+    }
   }
 
   function handleConfirmExtraction() {
@@ -404,56 +499,103 @@ export default function ConversationalOnboardingPage({ isPopup = false, onComple
             />
           ))}
 
-          {/* Confirmation UI for extracted data (photo upload) */}
+          {/* Auth Choice Step */}
+          {showAuthChoice && !authChoiceMade && (
+            <MessageCard delay={600}>
+              <div className="space-y-4 text-center">
+                <div className="font-semibold text-lg">Create a free account to save your insights</div>
+                <div className="flex flex-col gap-3 mt-4">
+                  <Button
+                    className="w-full h-12"
+                    onClick={() => {
+                      setAuthChoiceMade(true);
+                      sessionStorage.setItem('returnAfterOnboarding', '/dashboard-new/');
+                      router.push('/sign-up?from=onboarding');
+                    }}
+                  >Sign up</Button>
+                  <Button
+                    className="w-full h-12"
+                    variant="outline"
+                    onClick={() => {
+                      setAuthChoiceMade(true);
+                      sessionStorage.setItem('returnAfterOnboarding', '/dashboard-new/');
+                      router.push('/sign-in?from=onboarding');
+                    }}
+                  >Sign in</Button>
+                  <Button
+                    className="w-full h-12"
+                    variant="ghost"
+                    onClick={() => {
+                      setAuthChoiceMade(true);
+                      setShowAuthChoice(false);
+                      finalizeOnboarding();
+                    }}
+                  >Continue without account</Button>
+                </div>
+                <div className="text-xs text-gray-500 mt-2">You can always create an account later to sync your data.</div>
+              </div>
+            </MessageCard>
+          )}
+
+          {/* Confirmation UI for extracted data (photo/PDF upload) */}
           {showConfirmation && (
             <MessageCard delay={600}>
               <div className="space-y-4">
-                <div className="text-center font-semibold text-lg">Confirm Extracted Details</div>
+                <div className="text-center font-semibold text-lg">Review & Confirm Extracted Bill Details</div>
                 {/* Editable fields for extracted data */}
                 <div className="space-y-2">
-                  {extractedData?.tariff !== undefined && (
-                    <div>
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Tariff</label>
-                      <Input
-                        type="text"
-                        value={editedData.tariff || ''}
-                        onChange={(e) => handleEditData('tariff', e.target.value)}
-                        className="h-12"
-                      />
-                    </div>
-                  )}
-                  {extractedData?.cost !== undefined && (
-                    <div>
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Monthly Cost (£)</label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={editedData.cost || ''}
-                        onChange={(e) => handleEditData('cost', e.target.value)}
-                        className="h-12"
-                      />
-                    </div>
-                  )}
+                  {Object.entries(extractedData || {}).map(([key, value]) => {
+                    // Only show editable fields that are string/number and not internal
+                    if ([
+                      'provider','billDate','billPeriodStart','billPeriodEnd','energyType','electricityUsage','electricityDays','electricityCost','electricityUnitRate','electricityStandingCharge','gasUsage','gasDays','gasCost','gasUnitRate','gasStandingCharge','totalCost','tariff','cost','usage','ocrConfidence','needsReview'
+                    ].includes(key) && typeof value !== 'object') {
+                      return (
+                        <div key={key}>
+                          <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">{key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</label>
+                          <Input
+                            type={typeof value === 'number' ? 'number' : 'text'}
+                            value={editedData[key] ?? ''}
+                            onChange={e => handleEditData(key, e.target.value)}
+                            className="h-12"
+                          />
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
                 </div>
-                {/* Save/Cancel buttons */}
-                <div className="flex gap-2">
+                {/* Save/Cancel/Re-upload buttons */}
+                <div className="flex gap-2 flex-wrap">
                   <Button
                     className="flex-1 h-12"
                     onClick={handleConfirmExtraction}
                   >
-                    ✓ Save Changes
+                    ✓ Confirm & Continue
                   </Button>
                   <Button
                     className="flex-1 h-10"
                     variant="outline"
+                    onClick={handleReupload}
+                  >
+                    Upload New Document
+                  </Button>
+                  <Button
+                    className="flex-1 h-10"
+                    variant="ghost"
                     onClick={() => {
                       setEditMode(false);
                       setEditedData(extractedData);
                     }}
                   >
-                    Cancel
+                    Reset Edits
                   </Button>
                 </div>
+                {extractedData?.extractedText && (
+                  <details className="mt-2 text-xs text-gray-400">
+                    <summary>Show extracted text</summary>
+                    <pre className="whitespace-pre-wrap">{extractedData.extractedText}</pre>
+                  </details>
+                )}
               </div>
             </MessageCard>
           )}
@@ -706,3 +848,4 @@ export default function ConversationalOnboardingPage({ isPopup = false, onComple
     </div>
   );
 }
+

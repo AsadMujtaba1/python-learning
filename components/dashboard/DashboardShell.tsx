@@ -134,16 +134,21 @@ export default function DashboardShell(props: DashboardShellProps) {
     const [profileComplete, setProfileComplete] = useState(false);
 
     useEffect(() => {
-      // Load user data from localStorage
+      // Load canonical UserSavingsProfile from localStorage
       if (typeof window !== 'undefined') {
-        const data = localStorage.getItem('userHomeData');
+        const data = localStorage.getItem('userSavingsProfile') || localStorage.getItem('userHomeData');
         if (data) {
           try {
             const parsed = JSON.parse(data);
             setLocalUserData(parsed);
-            // Simple completeness check: all required fields present and non-empty
-            const required = ['postcode', 'supplier', 'usage', 'tariff', 'cost'];
-            setProfileComplete(required.every((k) => parsed[k] && parsed[k] !== ''));
+            // Check completeness for v1
+            if (parsed.version === 1 && parsed.household && parsed.energy) {
+              setProfileComplete(!!parsed.household.occupants && !!parsed.household.homeType && !!parsed.energy.supplier);
+            } else {
+              // fallback for legacy
+              const required = ['postcode', 'supplier', 'usage', 'tariff', 'cost'];
+              setProfileComplete(required.every((k) => parsed[k] && parsed[k] !== ''));
+            }
           } catch {}
         }
       }
@@ -216,10 +221,10 @@ export default function DashboardShell(props: DashboardShellProps) {
             transition={{ duration: 0.5 }}
           >
             <DashboardSummary
-              userCost={localUserData?.cost || 3.85}
+              userCost={localUserData?.energy?.cost ?? localUserData?.cost ?? 3.85}
               regionalAverage={4.20}
               nationalAverage={4.50}
-              region={localUserData?.postcode || props.region}
+              region={localUserData?.household?.postcode ?? localUserData?.postcode ?? props.region}
               hasUserData={!!localUserData}
             />
           </motion.section>

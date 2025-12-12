@@ -1,5 +1,7 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import type { EnergyBill } from '@/lib/types/userProfile';
+import pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
 
 /**
  * Bill OCR Extraction API
@@ -20,10 +22,28 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // For MVP, we'll use pattern-based extraction with mock OCR
-    // TODO: Integrate real OCR service (Google Cloud Vision, AWS Textract, or Tesseract.js)
-    const extracted = await extractBillData(fileUrl, fileName);
-    
+    // If PDF, extract text from PDF
+    let extractedText = '';
+    if (fileName.toLowerCase().endsWith('.pdf')) {
+      try {
+        // Fetch the PDF file (assuming fileUrl is accessible)
+        const res = await fetch(fileUrl);
+        if (!res.ok) throw new Error('Failed to fetch PDF');
+        const arrayBuffer = await res.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map((item: any) => item.str).join(' ') + '\n';
+        }
+        extractedText = text;
+      } catch (err) {
+        return NextResponse.json({ error: 'PDF extraction failed', details: err?.message }, { status: 500 });
+      }
+    }
+    // For images or fallback, use mock text (or OCR in future)
+    const extracted = await extractBillData(fileUrl, fileName, extractedText);
     return NextResponse.json(extracted);
     
   } catch (error) {
@@ -41,11 +61,12 @@ export async function POST(request: NextRequest) {
  * In production, integrate with OCR service
  */
 async function extractBillData(
-  fileUrl: string, 
-  fileName: string
+  fileUrl: string,
+  fileName: string,
+  extractedText?: string
 ): Promise<Partial<EnergyBill>> {
-  // Mock extracted text (in production, get from OCR service)
-  const mockText = `
+  // Use extractedText if provided (PDF), else fallback to mock
+  let text = extractedText && extractedText.trim().length > 0 ? extractedText : `
     British Gas
     Energy Bill
     Account Number: 123456789
@@ -66,44 +87,44 @@ async function extractBillData(
     
     TOTAL AMOUNT DUE: £157.40
   `;
-  
+
+  // If text is empty after extraction, return error
+  if (!text || text.trim().length < 10) {
+    return {
+      error: 'No text could be extracted from the PDF. Please try another document.',
+      extractedText: text
+    };
+  }
+
   // Extract provider
-  const provider = extractProvider(mockText);
-  
+  const provider = extractProvider(text);
   // Extract dates
-  const billDate = extractBillDate(mockText);
-  const { startDate, endDate, days } = extractBillPeriod(mockText);
-  
+  const billDate = extractBillDate(text);
+  const { startDate, endDate, days } = extractBillPeriod(text);
   // Extract electricity data
-  const electricityData = extractElectricityData(mockText);
-  
+  const electricityData = extractElectricityData(text);
   // Extract gas data
-  const gasData = extractGasData(mockText);
-  
+  const gasData = extractGasData(text);
   // Extract total
-  const totalCost = extractTotalCost(mockText);
-  
+  const totalCost = extractTotalCost(text);
   // Determine energy type
-  const energyType: 'electricity' | 'gas' | 'dual' = 
+  const energyType: 'electricity' | 'gas' | 'dual' =
     electricityData && gasData ? 'dual' :
     electricityData ? 'electricity' : 'gas';
-  
   // Calculate OCR confidence (mock)
-  const ocrConfidence = calculateConfidence(mockText, {
+  const ocrConfidence = calculateConfidence(text, {
     provider,
     billDate,
     electricityData,
     gasData,
     totalCost
   });
-  
   return {
     provider,
     billDate,
     billPeriodStart: startDate,
     billPeriodEnd: endDate,
     energyType,
-    
     // Electricity
     ...(electricityData && {
       electricityUsage: electricityData.usage,
@@ -112,7 +133,6 @@ async function extractBillData(
       electricityUnitRate: electricityData.unitRate,
       electricityStandingCharge: electricityData.standingCharge,
     }),
-    
     // Gas
     ...(gasData && {
       gasUsage: gasData.usage,
@@ -121,11 +141,10 @@ async function extractBillData(
       gasUnitRate: gasData.unitRate,
       gasStandingCharge: gasData.standingCharge,
     }),
-    
     totalCost,
     ocrConfidence,
     needsReview: ocrConfidence < 0.8,
-    extractedText: mockText.trim(),
+    extractedText: text.trim(),
   };
 }
 

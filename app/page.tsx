@@ -10,6 +10,7 @@ import OnboardingChatPopup from '@/components/OnboardingChatPopup';
 
 export default function Home() {
   const router = useRouter();
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -44,7 +45,7 @@ export default function Home() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4" id="start-button">
               <button 
-                onClick={() => router.push('/onboarding-conversational')}
+                onClick={() => setOnboardingOpen(true)}
                 className="group relative inline-flex items-center justify-center px-10 py-5 text-lg font-bold text-blue-700 bg-white rounded-full hover:bg-blue-50 transition-all duration-200 shadow-2xl hover:shadow-3xl transform hover:scale-105"
               >
                 Start with Energy Insights
@@ -322,7 +323,7 @@ export default function Home() {
         </div>
       </section>
       <Footer />
-      <OnboardingChatPopup />
+      <OnboardingChatPopup open={onboardingOpen} setOpen={setOnboardingOpen} />
     </div>
   );
 }

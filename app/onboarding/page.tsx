@@ -1,23 +1,15 @@
+// DEPRECATED: This onboarding route is deprecated in favor of /onboarding-conversational.
+// Redirecting to canonical onboarding.
 'use client';
-
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserHomeData } from '@/types';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<UserHomeData>({
-    postcode: '',
-    homeType: 'terraced',
-    occupants: 1,
-    heatingType: 'gas',
-  });
-
-  const handleNext = () => {
-    if (step < 4) {
-      setStep(step + 1);
-    } else {
+  useEffect(() => {
+    router.replace('/onboarding-conversational');
+  }, [router]);
+  return null;
       // Save to localStorage for MVP (replace with Firebase later)
       localStorage.setItem('userHomeData', JSON.stringify(formData));
       router.push('/dashboard');
